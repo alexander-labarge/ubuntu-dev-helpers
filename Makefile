@@ -1,5 +1,6 @@
 .PHONY: help setup setup-secureboot dev-env vbox-manager docker langs packages clean build install test
 .PHONY: iso-download vm-create vm-list vm-running vm-start vm-stop vm-delete vm-snapshot vm-restore vm-clone vm-info vm-eject vm-attach-iso vm-show-iso
+.PHONY: ssh-gen ssh-enroll ssh-config ssh-test
 
 # Use bash for shell commands (needed for source, [[ ]], etc.)
 SHELL := /bin/bash
@@ -41,6 +42,12 @@ help:
 	@echo "  vm-info            - Show VM details"
 	@echo "  vm-eject           - Eject ISO from VM"
 	@echo ""
+	@echo "SSH Key Manager:"
+	@echo "  ssh-gen            - Generate SSH key pair (interactive)"
+	@echo "  ssh-enroll         - Enroll SSH key on remote host (interactive)"
+	@echo "  ssh-config         - Run full SSH configuration (interactive)"
+	@echo "  ssh-test           - Test SSH connection to a host"
+	@echo ""
 	@echo "Utility Targets:"
 	@echo "  clean              - Remove build artifacts"
 	@echo ""
@@ -53,6 +60,9 @@ help:
 	@echo "  make vm-start VM_NAME=dev-server"
 	@echo "  make vm-stop VM_NAME=dev-server"
 	@echo "  make vm-snapshot VM_NAME=dev-server SNAP_NAME=clean-install"
+	@echo "  make ssh-gen                         # Generate SSH key"
+	@echo "  make ssh-enroll SSH_HOST=192.168.50.100 SSH_USER=skywalker"
+	@echo "  make ssh-test SSH_HOST=192.168.50.100"
 
 # Full development environment setup
 setup:
@@ -270,3 +280,40 @@ ifndef VM_NAME
 endif
 	@echo "ISO status for $(VM_NAME):"
 	@VBoxManage showvminfo "$(VM_NAME)" --machinereadable | grep -E "SATA-1-0" || echo "No SATA-1-0 found"
+
+# ==============================================================================
+# SSH Key Manager
+# ==============================================================================
+
+# Generate SSH key pair (interactive)
+# Usage: make ssh-gen [SSH_KEY_TYPE=ed25519] [SSH_KEY_NAME=id_ed25519]
+ssh-gen:
+	@SSH_KEY_TYPE="$(SSH_KEY_TYPE)" SSH_KEY_NAME="$(SSH_KEY_NAME)" \
+		./vbox-ssh-manager/ssh-gen.sh
+
+# Enroll SSH key on remote host (interactive)
+# Usage: make ssh-enroll [SSH_HOST=192.168.50.100] [SSH_USER=skywalker] [SSH_PORT=22]
+ssh-enroll:
+	@TARGET_IP="$(SSH_HOST)" TARGET_SSH_USER="$(SSH_USER)" TARGET_SSH_PORT="$(SSH_PORT)" \
+		./vbox-ssh-manager/ssh-remote-enroll.sh
+
+# Run full SSH configuration (interactive)
+# Usage: make ssh-config
+ssh-config:
+	@./vbox-ssh-manager/config.sh all
+
+# Test SSH connection to a host
+# Usage: make ssh-test SSH_HOST=192.168.50.100 [SSH_USER=skywalker] [SSH_PORT=22] [SSH_KEY=~/.ssh/id_rsa]
+ssh-test:
+ifndef SSH_HOST
+	$(error SSH_HOST is required. Usage: make ssh-test SSH_HOST=192.168.50.100)
+endif
+	@echo "Testing SSH connection to $(SSH_HOST)..."
+	@ssh -o BatchMode=yes \
+		-o ConnectTimeout=5 \
+		-o StrictHostKeyChecking=accept-new \
+		$(if $(SSH_KEY),-i "$(SSH_KEY)") \
+		-p $(or $(SSH_PORT),22) \
+		$(or $(SSH_USER),$$USER)@$(SSH_HOST) \
+		"echo '[OK] SSH connection successful to $$(hostname)'" \
+		|| (echo "[ERROR] SSH connection failed"; exit 1)
