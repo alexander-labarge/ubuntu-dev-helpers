@@ -1,6 +1,6 @@
 .PHONY: help setup setup-secureboot dev-env vbox-manager docker langs packages clean build install test
 .PHONY: iso-download vm-create vm-list vm-running vm-start vm-stop vm-delete vm-snapshot vm-restore vm-clone vm-info vm-eject vm-attach-iso vm-show-iso
-.PHONY: ssh-gen ssh-enroll ssh-config ssh-test ssh-copy-scripts
+.PHONY: ssh-gen ssh-enroll ssh-config ssh-test ssh-copy-scripts ssh-copy
 
 # Use bash for shell commands (needed for source, [[ ]], etc.)
 SHELL := /bin/bash
@@ -48,6 +48,7 @@ help:
 	@echo "  ssh-config         - Run full SSH configuration (interactive)"
 	@echo "  ssh-test           - Test SSH connection to a host"
 	@echo "  ssh-copy-scripts   - Copy ./scripts to remote host"
+	@echo "  ssh-copy           - Copy any path to remote host (LOCAL_PATH=./path)"
 	@echo ""
 	@echo "Utility Targets:"
 	@echo "  clean              - Remove build artifacts"
@@ -332,3 +333,25 @@ ssh-copy-scripts:
 	ssh -p "$$PORT" "$$USER@$$HOST" "mkdir -p $$REMOTE" && \
 	scp -r -P "$$PORT" ./scripts/* "$$USER@$$HOST:$$REMOTE/" && \
 	echo "[OK] Scripts copied successfully to $$USER@$$HOST:$$REMOTE"
+
+# Copy any local path to remote host
+# Usage: make ssh-copy LOCAL_PATH=./mydir [SSH_HOST=x.x.x.x] [SSH_USER=user] [SSH_PORT=22] [REMOTE_DIR=~]
+# Defaults are loaded from vbox-ssh-manager/config.sh
+ssh-copy:
+	@if [ -z "$(LOCAL_PATH)" ]; then \
+		echo "[ERROR] LOCAL_PATH is required. Usage: make ssh-copy LOCAL_PATH=./path"; \
+		exit 1; \
+	fi
+	@if [ ! -e "$(LOCAL_PATH)" ]; then \
+		echo "[ERROR] Path does not exist: $(LOCAL_PATH)"; \
+		exit 1; \
+	fi
+	@source vbox-ssh-manager/config.sh && \
+	HOST="$${SSH_HOST:-$$TARGET_IP}" && \
+	USER="$${SSH_USER:-$$TARGET_SSH_USER}" && \
+	PORT="$${SSH_PORT:-$$TARGET_SSH_PORT}" && \
+	REMOTE="$${REMOTE_DIR:-~}" && \
+	echo "Copying $(LOCAL_PATH) to $$USER@$$HOST:$$REMOTE ..." && \
+	ssh -p "$$PORT" "$$USER@$$HOST" "mkdir -p $$REMOTE" && \
+	scp -r -P "$$PORT" "$(LOCAL_PATH)" "$$USER@$$HOST:$$REMOTE/" && \
+	echo "[OK] $(LOCAL_PATH) copied successfully to $$USER@$$HOST:$$REMOTE"

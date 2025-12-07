@@ -40,6 +40,10 @@ security:
   # Enable authentication (requires users to log in)
   auth_enabled: false
   
+  # Admin credentials (used when auth_enabled is true)
+  admin_username: "admin"
+  admin_password: "changeme"  # CHANGE THIS IN PRODUCTION!
+  
   # Allowed file extensions (empty list = allow all except blocked)
   # Example: [".txt", ".pdf", ".jpg", ".png"]
   allowed_extensions: []

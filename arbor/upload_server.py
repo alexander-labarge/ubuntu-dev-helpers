@@ -69,6 +69,8 @@ class CompressionConfig(BaseModel):
 class SecurityConfig(BaseModel):
     """Security configuration"""
     auth_enabled: bool = False
+    admin_username: str = "admin"
+    admin_password: str = "admin"
     allowed_extensions: List[str] = []
     blocked_extensions: List[str] = [".exe", ".bat", ".cmd", ".sh"]
     rate_limit: str = "100/minute"
@@ -171,14 +173,8 @@ websocket_connections: Dict[str, WebSocket] = {}
 # Password context for hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Dummy user database (in production, use a proper database)
-users_db: Dict[str, User] = {
-    "admin": User(
-        username="admin",
-        hashed_password=pwd_context.hash("admin"),
-        role="admin"
-    )
-}
+# User database - initialized from config in main()
+users_db: Dict[str, User] = {}
 
 # HTTP Bearer for authentication
 security_scheme = HTTPBearer(auto_error=False)
@@ -1249,6 +1245,38 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
             padding: 20px;
         }
 
+        .auth-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-overlay.active {
+            display: flex;
+        }
+
+        .auth-container {
+            background: var(--bg-secondary);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .auth-container h2 {
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -1515,7 +1543,19 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
     </style>
 </head>
 <body>
-    <div class=\"container\">
+    <!-- Auth Section -->
+    <div id=\"authSection\" class=\"auth-overlay\">
+        <div class=\"auth-container\">
+            <h2>🔐 Authentication Required</h2>
+            <p style=\"color: var(--text-secondary); margin-bottom: 20px;\">Please log in to access the file explorer</p>
+            <input type=\"text\" id=\"username\" placeholder=\"Username\" style=\"width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);\">
+            <input type=\"password\" id=\"password\" placeholder=\"Password\" style=\"width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);\">
+            <button onclick=\"login()\" class=\"btn\" style=\"width: 100%;\">Login</button>
+            <div id=\"authError\" style=\"color: var(--error-color); margin-top: 10px; text-align: center;\"></div>
+        </div>
+    </div>
+
+    <div id=\"mainSection\" class=\"container\" style=\"display: none;\">
         <div class=\"header\">
             <div>
                 <h1>📁 ARBOR File Explorer</h1>
@@ -1563,6 +1603,61 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
 
     <script>
         let allData = null;
+        let authToken = null;
+        let isAuthRequired = false;
+
+        // Check auth on page load
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/check');
+                const data = await response.json();
+                isAuthRequired = data.auth_required;
+                
+                if (isAuthRequired) {
+                    document.getElementById('authSection').classList.add('active');
+                    document.getElementById('mainSection').style.display = 'none';
+                } else {
+                    document.getElementById('mainSection').style.display = 'block';
+                    loadFiles();
+                }
+            } catch (error) {
+                console.error('Error checking auth:', error);
+                document.getElementById('mainSection').style.display = 'block';
+                loadFiles();
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('authError');
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.access_token;
+                    document.getElementById('authSection').classList.remove('active');
+                    document.getElementById('mainSection').style.display = 'block';
+                    errorDiv.textContent = '';
+                    loadFiles();
+                } else {
+                    errorDiv.textContent = 'Invalid username or password';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Login failed: ' + error.message;
+            }
+        }
+
+        // Handle Enter key in password field
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') login();
+        });
 
         function formatBytes(bytes) {
             if (bytes === 0) return '0 B';
@@ -1623,7 +1718,18 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
             document.getElementById('emptyState').style.display = 'none';
 
             try {
-                const response = await fetch('/api/files');
+                const headers = {};
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                const response = await fetch('/api/files', { headers });
+                
+                if (response.status === 401) {
+                    document.getElementById('authSection').classList.add('active');
+                    document.getElementById('mainSection').style.display = 'none';
+                    return;
+                }
+                
                 allData = await response.json();
 
                 document.getElementById('loadingState').style.display = 'none';
@@ -1728,8 +1834,8 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
             renderSessions(filteredSessions);
         });
 
-        // Load files on page load
-        window.addEventListener('load', loadFiles);
+        // Check auth on page load
+        window.addEventListener('load', checkAuth);
     </script>
 </body>
 </html>
@@ -2390,6 +2496,14 @@ def main():
     
     # Configure logging
     logging.getLogger().setLevel(getattr(logging, config.logging.level))
+    
+    # Initialize users database from config
+    global users_db
+    users_db[config.security.admin_username] = User(
+        username=config.security.admin_username,
+        hashed_password=pwd_context.hash(config.security.admin_password),
+        role="admin"
+    )
     
     # Create upload directory
     Path(config.server.upload_dir).mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,24 @@
+[Unit]
+Description=ARBOR - Recursive Directory Upload Server
+Documentation=https://github.com/alexander-labarge/ubuntu-dev-helpers
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/arbor
+ExecStart=%h/arbor/venv/bin/python %h/arbor/upload_server.py --config %h/arbor/config.yaml
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=arbor
+
+# Resource limits
+Nice=10
+MemoryMax=512M
+
+# Environment
+Environment="PATH=%h/arbor/venv/bin:/usr/local/bin:/usr/bin:/bin"
+
+[Install]
+WantedBy=default.target

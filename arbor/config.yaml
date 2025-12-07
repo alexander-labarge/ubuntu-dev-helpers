@@ -13,11 +13,13 @@ compression:
   level: 6
 
 security:
-  auth_enabled: false
+  auth_enabled: true
+  admin_username: "skywalker"
+  admin_password: "Skywalker123!"
   allowed_extensions: []  # Empty = allow all
   blocked_extensions: [".exe", ".bat", ".cmd", ".sh"]
   rate_limit: "100/minute"
-  secret_key: "change-me-in-production-use-strong-random-key"
+  secret_key: "Skywalker123!"
 
 gitlab:
   enabled: false
