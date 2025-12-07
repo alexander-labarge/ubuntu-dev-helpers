@@ -27,6 +27,13 @@ A comprehensive collection of tools for setting up and managing Ubuntu/Debian-ba
   - [Snapshots and Cloning](#snapshots-and-cloning)
   - [Network Configuration](#network-configuration)
   - [Automatic KVM Conflict Resolution](#automatic-kvm-conflict-resolution)
+- [SSH Key Manager](#ssh-key-manager)
+  - [Quick Start](#quick-start-2)
+  - [SSH Key Generation](#ssh-key-generation)
+  - [Remote Key Enrollment](#remote-key-enrollment)
+  - [Configuration Variables](#configuration-variables)
+  - [SSH Manager Make Targets](#ssh-manager-make-targets)
+  - [Copying Scripts to Remote Hosts](#copying-scripts-to-remote-hosts)
 - [Makefile Targets](#makefile-targets)
 - [Command Reference](#command-reference)
 - [Initial Setup Workflow](#initial-setup-workflow)
@@ -114,11 +121,17 @@ ubuntu-dev-helpers/
 |   +--- README.md               # Component documentation
 |
 +--- vbox-factory/               # VirtualBox VM Factory
-    |--- create-vm.sh            # Main VM creation script
-    |--- start-vm.sh             # VM start with KVM handling
-    |--- vbox-lib.sh             # Reusable function library
-    |--- vbox-defaults.sh        # Computed defaults (RAM, CPUs, etc.)
-    |--- plan.md                 # Implementation plan
+|   |--- create-vm.sh            # Main VM creation script
+|   |--- start-vm.sh             # VM start with KVM handling
+|   |--- vbox-lib.sh             # Reusable function library
+|   |--- vbox-defaults.sh        # Computed defaults (RAM, CPUs, etc.)
+|   |--- plan.md                 # Implementation plan
+|   +--- README.md               # Component documentation
+|
++--- vbox-ssh-manager/           # SSH Key Manager
+    |--- config.sh               # Interactive configuration
+    |--- ssh-gen.sh              # SSH key generation
+    |--- ssh-remote-enroll.sh    # Remote key enrollment
     +--- README.md               # Component documentation
 ```
 
@@ -812,6 +825,187 @@ make vm-delete VM_NAME=<vm-name>
 rm -f ~/vms/disks/<vm-name>.vdi
 make vm-create VM_NAME=<vm-name>
 ```
+
+## SSH Key Manager
+
+The SSH Key Manager provides interactive tools for generating SSH keys and enrolling them on remote hosts (like VirtualBox VMs).
+
+### Quick Start
+
+```bash
+# Generate a new SSH key pair
+make ssh-gen
+
+# Enroll the key on a remote host
+make ssh-enroll SSH_HOST=192.168.50.100 SSH_USER=skywalker
+
+# Test SSH connection
+make ssh-test SSH_HOST=192.168.50.100
+```
+
+### SSH Key Generation
+
+The `ssh-gen` script provides interactive SSH key generation with sensible defaults.
+
+```bash
+# Interactive key generation
+make ssh-gen
+
+# Or run directly
+./vbox-ssh-manager/ssh-gen.sh
+```
+
+**Features:**
+- Supports **ed25519** (recommended), RSA, and ECDSA key types
+- Optional passphrase protection
+- Automatic SSH agent integration
+- Proper permission setting (600 for private, 644 for public)
+
+**Example session:**
+```
+=== SSH Key Generation Configuration ===
+
+SSH key directory [/home/user/.ssh]: 
+Key filename (without path) [id_rsa]: id_gitlab
+
+Available key types: ed25519 (recommended), rsa, ecdsa
+Key type [ed25519]: 
+Key comment [user@hostname]: 
+
+Note: Empty passphrase = no encryption (less secure but convenient)
+Use passphrase for key? [Y/n]: n
+
+[OK] SSH key generated successfully
+
+Public key location: /home/user/.ssh/id_gitlab.pub
+Private key location: /home/user/.ssh/id_gitlab
+```
+
+### Remote Key Enrollment
+
+The `ssh-remote-enroll` script enrolls your SSH public key on a remote host.
+
+```bash
+# Interactive enrollment
+make ssh-enroll SSH_HOST=192.168.50.100 SSH_USER=skywalker
+
+# Or run directly
+./vbox-ssh-manager/ssh-remote-enroll.sh
+```
+
+**Features:**
+- Uses `ssh-copy-id` when available (with manual fallback)
+- Automatic backup of remote `authorized_keys`
+- Adds entry to `~/.ssh/config` for easy access
+- Optional hostname setting on remote
+- Optional password authentication disable (with safety checks)
+
+**Example session:**
+```
+=== SSH Target Configuration ===
+
+Target IP or hostname [192.168.50.89]: 192.168.50.100
+SSH port [22]: 
+SSH username [skywalker]: 
+SSH config alias (for ~/.ssh/config) [skywalker-vm]: gitlab-vm
+
+=== Enrolling Key (ssh-copy-id) ===
+
+[INFO] Enrolling public key: /home/user/.ssh/id_rsa.pub
+[WARN] You will be prompted for the remote user's password
+
+skywalker@192.168.50.100's password: 
+Number of key(s) added: 1
+
+[OK] Key enrolled successfully via ssh-copy-id
+[OK] SSH config entry added
+
+You can now connect with: ssh gitlab-vm
+```
+
+### Configuration Variables
+
+All scripts use `config.sh` which provides sensible defaults that can be overridden.
+
+#### SSH Target
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TARGET_IP` | 192.168.50.89 | Remote host IP or hostname |
+| `TARGET_SSH_PORT` | 22 | SSH port |
+| `TARGET_SSH_USER` | skywalker | Remote username |
+| `TARGET_HOSTNAME` | (empty) | Set hostname on remote |
+| `SSH_CONFIG_ALIAS` | (auto) | Alias for ~/.ssh/config |
+
+#### SSH Key Generation
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SSH_KEY_DIR` | ~/.ssh | Directory for keys |
+| `SSH_KEY_NAME` | id_rsa | Key filename |
+| `SSH_KEY_TYPE` | ed25519 | Key type (ed25519, rsa, ecdsa) |
+| `SSH_KEY_BITS` | 4096 | RSA key bits |
+| `SSH_KEY_COMMENT` | user@hostname | Key comment |
+
+#### Enrollment Options
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENROLL_COPY_ID` | true | Use ssh-copy-id |
+| `ENROLL_BACKUP_AUTHORIZED_KEYS` | true | Backup before modifying |
+| `ENROLL_TEST_CONNECTION` | true | Test after enrollment |
+| `ENROLL_ADD_TO_SSH_CONFIG` | true | Add ~/.ssh/config entry |
+| `ENROLL_DISABLE_PASSWORD_AUTH` | false | Disable password auth (dangerous!) |
+
+### SSH Manager Workflow Example
+
+```bash
+# Step 1: Create a VM with vbox-factory
+make vm-create VM_NAME=gitlab-vm VM_GUI=1
+
+# Step 2: Install Ubuntu in the VM, note the IP from DHCP
+
+# Step 3: Generate SSH key (if you don't have one)
+make ssh-gen
+
+# Step 4: Enroll the key on the VM
+make ssh-enroll SSH_HOST=192.168.50.100 SSH_USER=skywalker
+# Enter password when prompted for enrollment
+
+# Step 5: Connect using the alias!
+ssh skywalker-vm
+```
+
+### SSH Manager Make Targets
+
+| Target | Description | Example |
+|--------|-------------|--------|
+| `ssh-gen` | Generate SSH key pair (interactive) | `make ssh-gen` |
+| `ssh-enroll` | Enroll SSH key on remote host | `make ssh-enroll SSH_HOST=192.168.50.100` |
+| `ssh-config` | Run full SSH configuration | `make ssh-config` |
+| `ssh-test` | Test SSH connection | `make ssh-test SSH_HOST=192.168.50.100` |
+| `ssh-copy-scripts` | Copy ./scripts to remote host | `make ssh-copy-scripts` |
+
+### Copying Scripts to Remote Hosts
+
+The `ssh-copy-scripts` target allows you to quickly deploy scripts from the `./scripts` directory to a remote host:
+
+```bash
+# Copy using defaults from config.sh (TARGET_IP, TARGET_SSH_USER, TARGET_SSH_PORT)
+make ssh-copy-scripts
+
+# Override with custom values
+make ssh-copy-scripts SSH_HOST=192.168.50.100 SSH_USER=admin
+
+# Specify custom remote directory (default: ~/scripts)
+make ssh-copy-scripts REMOTE_DIR=/opt/scripts
+```
+
+**Example: Deploying GitLab Installation Script**
+
+![GitLab Installation on VM](scripts/images/script_install_gitlab.png)
+
+*Screenshot: GitLab EE being installed on a VirtualBox VM after copying scripts via `make ssh-copy-scripts`*
 
 ## Makefile Targets
 

@@ -1,6 +1,6 @@
 .PHONY: help setup setup-secureboot dev-env vbox-manager docker langs packages clean build install test
 .PHONY: iso-download vm-create vm-list vm-running vm-start vm-stop vm-delete vm-snapshot vm-restore vm-clone vm-info vm-eject vm-attach-iso vm-show-iso
-.PHONY: ssh-gen ssh-enroll ssh-config ssh-test
+.PHONY: ssh-gen ssh-enroll ssh-config ssh-test ssh-copy-scripts
 
 # Use bash for shell commands (needed for source, [[ ]], etc.)
 SHELL := /bin/bash
@@ -47,6 +47,7 @@ help:
 	@echo "  ssh-enroll         - Enroll SSH key on remote host (interactive)"
 	@echo "  ssh-config         - Run full SSH configuration (interactive)"
 	@echo "  ssh-test           - Test SSH connection to a host"
+	@echo "  ssh-copy-scripts   - Copy ./scripts to remote host"
 	@echo ""
 	@echo "Utility Targets:"
 	@echo "  clean              - Remove build artifacts"
@@ -317,3 +318,17 @@ endif
 		$(or $(SSH_USER),$$USER)@$(SSH_HOST) \
 		"echo '[OK] SSH connection successful to $$(hostname)'" \
 		|| (echo "[ERROR] SSH connection failed"; exit 1)
+
+# Copy ./scripts directory to remote host
+# Usage: make ssh-copy-scripts [SSH_HOST=x.x.x.x] [SSH_USER=user] [SSH_PORT=22] [REMOTE_DIR=~/scripts]
+# Defaults are loaded from vbox-ssh-manager/config.sh
+ssh-copy-scripts:
+	@source vbox-ssh-manager/config.sh && \
+	HOST="$${SSH_HOST:-$$TARGET_IP}" && \
+	USER="$${SSH_USER:-$$TARGET_SSH_USER}" && \
+	PORT="$${SSH_PORT:-$$TARGET_SSH_PORT}" && \
+	REMOTE="$${REMOTE_DIR:-~/scripts}" && \
+	echo "Copying ./scripts to $$USER@$$HOST:$$REMOTE ..." && \
+	ssh -p "$$PORT" "$$USER@$$HOST" "mkdir -p $$REMOTE" && \
+	scp -r -P "$$PORT" ./scripts/* "$$USER@$$HOST:$$REMOTE/" && \
+	echo "[OK] Scripts copied successfully to $$USER@$$HOST:$$REMOTE"
