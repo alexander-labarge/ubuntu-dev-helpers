@@ -1,5 +1,8 @@
 .PHONY: help setup setup-secureboot dev-env vbox-manager docker langs packages clean build install test
-.PHONY: iso-download vm-create vm-list vm-running vm-start vm-stop vm-delete vm-snapshot vm-restore vm-clone vm-info vm-eject
+.PHONY: iso-download vm-create vm-list vm-running vm-start vm-stop vm-delete vm-snapshot vm-restore vm-clone vm-info vm-eject vm-attach-iso vm-show-iso
+
+# Use bash for shell commands (needed for source, [[ ]], etc.)
+SHELL := /bin/bash
 
 # Default target
 help:
@@ -156,13 +159,13 @@ vm-list:
 vm-running:
 	@VBoxManage list runningvms
 
-# Start a VM (headless by default) - automatically disables KVM if needed
-# Usage: make vm-start VM_NAME=myvm [VM_GUI=1]
+# Start a VM (GUI by default) - automatically disables KVM if needed
+# Usage: make vm-start VM_NAME=myvm [VM_HEADLESS=1]
 vm-start:
 ifndef VM_NAME
 	$(error VM_NAME is required. Usage: make vm-start VM_NAME=myvm)
 endif
-	@./vbox-factory/start-vm.sh "$(VM_NAME)" $(if $(VM_GUI),gui,headless)
+	@./vbox-factory/start-vm.sh "$(VM_NAME)" $(if $(VM_HEADLESS),headless,gui)
 
 # Stop a VM gracefully (use VM_FORCE=1 for immediate poweroff)
 # Usage: make vm-stop VM_NAME=myvm [VM_FORCE=1]
@@ -222,6 +225,33 @@ ifndef VM_NAME
 endif
 	@VBoxManage showvminfo "$(VM_NAME)"
 
+# Attach ISO to VM
+# Usage: make vm-attach-iso VM_NAME=myvm [VM_ISO=/path/to/iso] [VM_TYPE=desktop|server]
+# If VM_ISO not specified, auto-selects based on VM_TYPE (default: desktop)
+vm-attach-iso:
+ifndef VM_NAME
+	$(error VM_NAME is required. Usage: make vm-attach-iso VM_NAME=myvm [VM_ISO=/path/to/iso])
+endif
+	@source vbox-factory/vbox-defaults.sh && \
+	ISO_PATH="$(VM_ISO)"; \
+	if [ -z "$$ISO_PATH" ]; then \
+		VM_TYPE="$${VM_TYPE:-desktop}"; \
+		if [ "$$VM_TYPE" = "server" ]; then \
+			ISO_PATH="$$VBOX_DEFAULT_ISO_SERVER"; \
+		else \
+			ISO_PATH="$$VBOX_DEFAULT_ISO_DESKTOP"; \
+		fi; \
+	fi; \
+	if [ ! -f "$$ISO_PATH" ]; then \
+		echo "Error: ISO not found at $$ISO_PATH"; \
+		echo "Available ISOs in $$VBOX_DEFAULT_ISO_DIR:"; \
+		ls -la "$$VBOX_DEFAULT_ISO_DIR"/*.iso 2>/dev/null || echo "  (none)"; \
+		exit 1; \
+	fi; \
+	echo "Attaching ISO: $$ISO_PATH to $(VM_NAME)"; \
+	VBoxManage storageattach "$(VM_NAME)" --storagectl "SATA" --port 1 --device 0 --type dvddrive --medium "$$ISO_PATH"; \
+	echo "[OK] ISO attached successfully"
+
 # Eject ISO from VM
 # Usage: make vm-eject VM_NAME=myvm
 vm-eject:
@@ -229,3 +259,13 @@ ifndef VM_NAME
 	$(error VM_NAME is required. Usage: make vm-eject VM_NAME=myvm)
 endif
 	@VBoxManage storageattach "$(VM_NAME)" --storagectl "SATA" --port 1 --device 0 --type dvddrive --medium emptydrive
+	@echo "[OK] ISO ejected"
+
+# Show what ISO is attached to a VM
+# Usage: make vm-show-iso VM_NAME=myvm
+vm-show-iso:
+ifndef VM_NAME
+	$(error VM_NAME is required. Usage: make vm-show-iso VM_NAME=myvm)
+endif
+	@echo "ISO status for $(VM_NAME):"
+	@VBoxManage showvminfo "$(VM_NAME)" --machinereadable | grep -E "SATA-1-0" || echo "No SATA-1-0 found"

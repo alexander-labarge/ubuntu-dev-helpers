@@ -45,11 +45,11 @@ sudo ./dev-server-setup.sh --secureboot
 
 ## Features
 
-- ✅ Automated APT configuration and system updates
-- ✅ Fixes common APT sandbox permission issues
-- ✅ User group configuration (docker, vboxusers)
-- ✅ Environment variable setup for all languages
-- ✅ Modular installation (install only what you need)
+- - Automated APT configuration and system updates
+- - Fixes common APT sandbox permission issues
+- - User group configuration (docker, vboxusers)
+- - Environment variable setup for all languages
+- - Modular installation (install only what you need)
 
 ## Post-Installation
 

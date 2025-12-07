@@ -24,11 +24,11 @@ sudo virtualbox-sb-manager full
 
 VirtualBox requires kernel modules that must be cryptographically signed when Secure Boot is enabled. This tool automates:
 
-- ✅ Signing key generation
-- ✅ MOK (Machine Owner Key) enrollment
-- ✅ Automatic module signing after kernel updates
-- ✅ Module verification and loading
-- ✅ KVM conflict management
+- - Signing key generation
+- - MOK (Machine Owner Key) enrollment
+- - Automatic module signing after kernel updates
+- - Module verification and loading
+- - KVM conflict management
 
 ## Components
 

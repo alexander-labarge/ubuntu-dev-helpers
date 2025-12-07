@@ -71,25 +71,25 @@ Here's what happens when you run `sudo ./sign-vbox-modules.sh --setup`:
 
 ```
 Step 1: Script asks for certificate name
-  → Enter your name or press Enter for default
+  -> Enter your name or press Enter for default
 
 Step 2: OpenSSL prompts for SIGNING KEY PASSPHRASE (Password #1)
-  → Enter PEM pass phrase: [type your main password]
-  → Verifying - Enter PEM pass phrase: [type it again - must match]
+  -> Enter PEM pass phrase: [type your main password]
+  -> Verifying - Enter PEM pass phrase: [type it again - must match]
   [DONE] Keys created!
 
 Step 3: mokutil prompts for TEMPORARY MOK PASSWORD (Password #2)
-  → input password: [type temporary password]
-  → input password again: [type it again - must match]
+  -> input password: [type temporary password]
+  -> input password again: [type it again - must match]
   [DONE] MOK import scheduled!
 
 Step 4: Reboot and use Password #2 in MOK Manager
-  → Enter the temporary password in the blue screen
+  -> Enter the temporary password in the blue screen
   [DONE] MOK enrolled!
 
 Step 5: After reboot, use Password #1 to sign modules
-  → sudo ./sign-vbox-modules.sh --sign
-  → Passphrase for /root/module-signing/MOK.priv: [type Password #1]
+  -> sudo ./sign-vbox-modules.sh --sign
+  -> Passphrase for /root/module-signing/MOK.priv: [type Password #1]
   [DONE] Modules signed!
 ```
 
@@ -129,8 +129,8 @@ If you see repeated "password doesn't match" errors, try a longer password.
 ## Quick Tips
 
 1. **Two different tools = Two different passwords**
-   - OpenSSL → Signing Key Passphrase (permanent)
-   - mokutil → Temporary Password (one-time)
+   - OpenSSL -> Signing Key Passphrase (permanent)
+   - mokutil -> Temporary Password (one-time)
 
 2. **They can be the same or different**
    - It's your choice
@@ -151,7 +151,7 @@ If you see repeated "password doesn't match" errors, try a longer password.
 
 If you're unsure which password is being asked for, look at the prompt:
 
-- **"Enter PEM pass phrase:"** → Password #1 (OpenSSL, permanent)
-- **"input password:"** → Password #2 (mokutil, temporary)
+- **"Enter PEM pass phrase:"** -> Password #1 (OpenSSL, permanent)
+- **"input password:"** -> Password #2 (mokutil, temporary)
 
 The script now provides clear messages before each password prompt to help you understand which one is being requested.

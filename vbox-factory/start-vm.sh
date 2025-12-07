@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/vbox-lib.sh"
 
 VM_NAME="${1:-}"
-VM_TYPE="${2:-headless}"
+VM_TYPE="${2:-${VBOX_DEFAULT_START_MODE:-gui}}"
 
 if [ -z "$VM_NAME" ]; then
     log_error "VM name required"

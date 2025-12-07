@@ -77,12 +77,12 @@ $ make vm-start VM_NAME=test-desktop VM_GUI=1
 
 ## Prerequisites
 
-1. **VirtualBox installed** — The `dev-env-setup` can handle this:
+1. **VirtualBox installed** - The `dev-env-setup` can handle this:
    ```bash
    sudo make setup
    ```
 
-2. **Ubuntu ISOs downloaded** — To `$HOME/vms/isos`:
+2. **Ubuntu ISOs downloaded** - To `$HOME/vms/isos`:
    ```bash
    make iso-download
    ```
@@ -129,7 +129,7 @@ make vm-create VM_NAME=<name> [OPTIONS]
 | `VM_TYPE` | desktop | `server` or `desktop` |
 | `VM_NET` | bridged | `bridged` or `nat` |
 | `VM_IFACE` | auto-detect | Bridge interface (e.g., `eth0`, `eno4`) |
-| `VM_IP` | (none) | Static IP — prints Netplan config |
+| `VM_IP` | (none) | Static IP - prints Netplan config |
 | `VM_GATEWAY` | 192.168.50.1 | Gateway for static IP |
 | `VM_DNS` | 8.8.8.8 | DNS server for static IP |
 | `VM_ISO` | auto-select | Custom ISO path |
@@ -142,9 +142,9 @@ Defaults are computed from your host system via `vbox-defaults.sh`:
 
 ```bash
 $ ./vbox-factory/vbox-defaults.sh
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--------------------------------------------------------------------
 VBox Factory Defaults (computed from host system)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--------------------------------------------------------------------
   Host RAM:        112608 MB
   Host CPUs:       32
 
@@ -161,16 +161,16 @@ VBox Factory Defaults (computed from host system)
   Secure Boot:     on
   EFI:             on
   Nested HW Virt:  on
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--------------------------------------------------------------------
 ```
 
 ### Security Features (Enabled by Default)
 
-- **EFI firmware** — Modern UEFI boot
-- **Secure Boot** — EFI secure boot mode
-- **CPU passthrough** — Nested VT-x/AMD-V for running VMs inside VMs
-- **Hardware virtualization** — VT-x/AMD-V acceleration
-- **PAE/NX** — Physical Address Extension
+- **EFI firmware** - Modern UEFI boot
+- **Secure Boot** - EFI secure boot mode
+- **CPU passthrough** - Nested VT-x/AMD-V for running VMs inside VMs
+- **Hardware virtualization** - VT-x/AMD-V acceleration
+- **PAE/NX** - Physical Address Extension
 
 ### Examples
 
@@ -221,7 +221,7 @@ make vm-restore VM_NAME=dev-server SNAP_NAME=clean-install
 # Full clone (independent copy)
 make vm-clone VM_TEMPLATE=ubuntu-base VM_NAME=worker-01
 
-# Linked clone (faster, shares base disk — saves space)
+# Linked clone (faster, shares base disk - saves space)
 make vm-clone VM_TEMPLATE=ubuntu-base VM_NAME=worker-02 VM_LINKED=1
 ```
 
@@ -310,19 +310,19 @@ make vm-create VM_NAME=<vm-name>
 
 ```
 vbox-factory/
-├── README.md           # This file
-├── plan.md             # Implementation plan and VBoxManage reference
-├── vbox-defaults.sh    # Computed defaults (RAM, CPUs, etc.)
-├── vbox-lib.sh         # Reusable function library
-├── create-vm.sh        # Main VM creation script
-└── start-vm.sh         # VM start with KVM handling
+|--- README.md           # This file
+|--- plan.md             # Implementation plan and VBoxManage reference
+|--- vbox-defaults.sh    # Computed defaults (RAM, CPUs, etc.)
+|--- vbox-lib.sh         # Reusable function library
+|--- create-vm.sh        # Main VM creation script
++--- start-vm.sh         # VM start with KVM handling
 ```
 
 **Standard VM paths:**
 ```
 $HOME/vms/
-├── disks/              # Virtual disk files (.vdi)
-└── isos/               # Ubuntu ISO files
+|--- disks/              # Virtual disk files (.vdi)
++--- isos/               # Ubuntu ISO files
 ```
 
 ## Direct Script Usage

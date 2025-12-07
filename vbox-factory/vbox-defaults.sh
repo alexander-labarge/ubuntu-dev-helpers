@@ -52,6 +52,11 @@ export VBOX_BASE="${VBOX_BASE:-$HOME/vms}"
 export VBOX_DISKS="${VBOX_DISKS:-$VBOX_BASE/disks}"
 export VBOX_ISOS="${VBOX_ISOS:-$VBOX_BASE/isos}"
 
+# ISO file paths (for convenience)
+export VBOX_DEFAULT_ISO_DIR="${VBOX_DEFAULT_ISO_DIR:-$VBOX_ISOS}"
+export VBOX_DEFAULT_ISO_DESKTOP="${VBOX_DEFAULT_ISO_DESKTOP:-$VBOX_ISOS/ubuntu-24.04.3-desktop-amd64.iso}"
+export VBOX_DEFAULT_ISO_SERVER="${VBOX_DEFAULT_ISO_SERVER:-$VBOX_ISOS/ubuntu-24.04.3-live-server-amd64.iso}"
+
 # ==============================================================================
 # VM System Defaults
 # ==============================================================================
@@ -75,6 +80,9 @@ export VBOX_DEFAULT_VRAM_DESKTOP="${VBOX_DEFAULT_VRAM_DESKTOP:-128}"
 # ==============================================================================
 export VBOX_DEFAULT_TYPE="${VBOX_DEFAULT_TYPE:-desktop}"
 export VBOX_DEFAULT_OSTYPE="${VBOX_DEFAULT_OSTYPE:-Ubuntu_64}"
+
+# Start mode: gui (default) or headless
+export VBOX_DEFAULT_START_MODE="${VBOX_DEFAULT_START_MODE:-gui}"
 
 # ==============================================================================
 # Network Defaults
@@ -133,9 +141,9 @@ export VBOX_DEFAULT_BOOT4="${VBOX_DEFAULT_BOOT4:-none}"
 # Logging
 # ==============================================================================
 _log_defaults() {
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "--------------------------------------------------------------------------------"
     echo "VBox Factory Defaults (computed from host system)"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "--------------------------------------------------------------------------------"
     echo "  Host RAM:        $(_get_total_ram_mb) MB"
     echo "  Host CPUs:       $(_get_cpu_count)"
     echo ""
@@ -152,7 +160,7 @@ _log_defaults() {
     echo "  Secure Boot:     ${VBOX_DEFAULT_SECUREBOOT}"
     echo "  EFI:             ${VBOX_DEFAULT_EFI}"
     echo "  Nested HW Virt:  ${VBOX_DEFAULT_NESTED_HW_VIRT}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "--------------------------------------------------------------------------------"
 }
 
 # If run directly (not sourced), show the defaults

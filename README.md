@@ -79,32 +79,32 @@ sudo cp target/release/virtualbox-sb-manager /usr/local/bin/
 
 ```
 ubuntu-dev-helpers/
-├── Makefile                    # Main build/install targets
-├── README.md                   # This file
-├── .gitignore                  # Git ignore rules
-│
-├── dev-env-setup/              # Development environment setup
-│   ├── dev-server-setup.sh     # Main setup script
-│   ├── INSTALLATION.md         # Installation guide
-│   └── README.md               # Component documentation
-│
-├── iso-manager/                # ISO download utilities
-│   ├── download_ubuntu_24.04.3.sh  # Ubuntu ISO downloader
-│   └── README.md               # Component documentation
-│
-└── vbox-sb-manager/            # VirtualBox Secure Boot Manager
-    ├── Cargo.toml              # Rust project manifest
-    ├── Cargo.lock              # Dependency lock file
-    ├── src/                    # Rust source code
-    ├── tests/                  # Integration tests
-    ├── systemd/                # Systemd service files
-    ├── examples/               # Usage examples
-    ├── sign-vbox-modules.sh    # Shell script version
-    ├── disable-kvm.sh          # KVM management script
-    ├── ARCHITECTURE.md         # Technical architecture
-    ├── PASSWORD-GUIDE.md       # Password management
-    ├── MIGRATION.md            # Migration guide
-    └── README.md               # Component documentation
+|--- Makefile                    # Main build/install targets
+|--- README.md                   # This file
+|--- .gitignore                  # Git ignore rules
+|
+|--- dev-env-setup/              # Development environment setup
+|   |--- dev-server-setup.sh     # Main setup script
+|   |--- INSTALLATION.md         # Installation guide
+|   +--- README.md               # Component documentation
+|
+|--- iso-manager/                # ISO download utilities
+|   |--- download_ubuntu_24.04.3.sh  # Ubuntu ISO downloader
+|   +--- README.md               # Component documentation
+|
++--- vbox-sb-manager/            # VirtualBox Secure Boot Manager
+    |--- Cargo.toml              # Rust project manifest
+    |--- Cargo.lock              # Dependency lock file
+    |--- src/                    # Rust source code
+    |--- tests/                  # Integration tests
+    |--- systemd/                # Systemd service files
+    |--- examples/               # Usage examples
+    |--- sign-vbox-modules.sh    # Shell script version
+    |--- disable-kvm.sh          # KVM management script
+    |--- ARCHITECTURE.md         # Technical architecture
+    |--- PASSWORD-GUIDE.md       # Password management
+    |--- MIGRATION.md            # Migration guide
+    +--- README.md               # Component documentation
 ```
 
 ## Development Environment Setup
@@ -114,15 +114,15 @@ ubuntu-dev-helpers/
 The `dev-server-setup.sh` script is the **main entry point** for setting up a complete Ubuntu/Debian development environment. It automates the installation and configuration of all essential development tools, languages, and utilities.
 
 **Features:**
-- ✅ Automated APT configuration and system updates
-- ✅ Docker Engine + Docker Compose installation
-- ✅ Apptainer (Singularity) container runtime
-- ✅ Programming languages (Rust, Go, Java, Python)
-- ✅ Development tools (VS Code, Chrome, Git, etc.)
-- ✅ VirtualBox with Secure Boot support
-- ✅ System monitoring tools (btop, htop, neofetch)
-- ✅ User group configuration (docker, vboxusers)
-- ✅ Environment variable setup for all languages
+- - Automated APT configuration and system updates
+- - Docker Engine + Docker Compose installation
+- - Apptainer (Singularity) container runtime
+- - Programming languages (Rust, Go, Java, Python)
+- - Development tools (VS Code, Chrome, Git, etc.)
+- - VirtualBox with Secure Boot support
+- - System monitoring tools (btop, htop, neofetch)
+- - User group configuration (docker, vboxusers)
+- - Environment variable setup for all languages
 
 ### Installation Options
 
@@ -871,7 +871,7 @@ The provided systemd service files include security hardening:
 
 ### Community Resources
 
-- Original guide by Øyvind Stegard
+- Original guide by Oyvind Stegard
 - [GitHub Gist by reillysiemens](https://gist.github.com/reillysiemens/ac6bea1e6c7684d62f544bd79b2182a4) - Popular VirtualBox signing guide
 
 ### Related Tools

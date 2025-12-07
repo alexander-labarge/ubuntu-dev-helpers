@@ -45,16 +45,16 @@ pub fn print_progress(current: usize, total: usize, item: &str) {
 /// Print a styled box
 pub fn print_box(title: &str, lines: &[&str]) {
     let max_width = lines.iter().map(|l| l.len()).max().unwrap_or(0).max(title.len());
-    let top = format!("╔{}╗", "═".repeat(max_width + 2));
-    let bottom = format!("╚{}╝", "═".repeat(max_width + 2));
+    let top = format!("+{}+", "=".repeat(max_width + 2));
+    let bottom = format!("+{}+", "=".repeat(max_width + 2));
     
     println!("{}", top.cyan());
-    println!("║ {}{} ║", title.bold(), " ".repeat(max_width - title.len() + 1));
+    println!("| {}{} |", title.bold(), " ".repeat(max_width - title.len() + 1));
     if !lines.is_empty() {
-        println!("║{}║", " ".repeat(max_width + 2));
+        println!("|{}|", " ".repeat(max_width + 2));
     }
     for line in lines {
-        println!("║ {}{} ║", line, " ".repeat(max_width - line.len() + 1));
+        println!("| {}{} |", line, " ".repeat(max_width - line.len() + 1));
     }
     println!("{}", bottom.cyan());
 }

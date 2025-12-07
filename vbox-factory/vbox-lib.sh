@@ -199,7 +199,7 @@ vbox_eject_iso() {
 }
 
 # ==============================================================================
-# Networking — Bridged is default
+# Networking - Bridged is default
 # ==============================================================================
 vbox_detect_bridge_iface() {
     # Auto-detect the default network interface
