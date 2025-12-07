@@ -1,15 +1,24 @@
 # ISO Manager
 
-Utility script for downloading Ubuntu ISOs.
+Utility for downloading Ubuntu ISOs. Run through the repository Makefile so you get the right defaults.
 
 ## Usage
 
 ```bash
-cd iso-manager
-./download_ubuntu_24.04.3.sh
+# From the repo root
+make iso-download
 ```
 
-This will download Ubuntu 24.04.3 LTS ISOs (server and desktop) to `$HOME/vms/isos/`.
+This downloads Ubuntu 24.04.3 LTS ISOs (server and desktop) to `$HOME/vms/isos/` by default.
+
+### Customization via env vars
+
+These can be set inline with `make iso-download`:
+
+- `UBUNTU_VERSION` (default `24.04.3`)
+- `ISO_DIR` (default `$HOME/vms/isos`)
+- `DOWNLOAD_SERVER` (default `1`)
+- `DOWNLOAD_DESKTOP` (default `1`)
 
 ## What it downloads
 

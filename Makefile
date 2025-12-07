@@ -9,6 +9,7 @@ help:
 	@echo "Main Targets:"
 	@echo "  setup              - Full development environment setup"
 	@echo "  setup-secureboot   - Full setup with VirtualBox Secure Boot configuration"
+	@echo "  iso-download       - Download Ubuntu ISOs (configurable)"
 	@echo ""
 	@echo "Component-Specific Targets:"
 	@echo "  dev-env            - Run development environment setup script"
@@ -16,6 +17,7 @@ help:
 	@echo "  langs              - Install programming languages (Rust, Go, Java)"
 	@echo "  packages           - Install essential development packages"
 	@echo "  vbox-manager       - Build and install VirtualBox Secure Boot Manager"
+	@echo "  iso-download       - Download Ubuntu ISOs to $(HOME)/vms/isos"
 	@echo ""
 	@echo "VirtualBox Secure Boot Manager:"
 	@echo "  build              - Build the Rust binary"
@@ -32,6 +34,7 @@ help:
 	@echo "  sudo make docker               # Docker only"
 	@echo "  make build                     # Build vbox-sb-manager"
 	@echo "  sudo make install              # Install vbox-sb-manager"
+	@echo "  make iso-download              # Download Ubuntu ISOs"
 
 # Full development environment setup
 setup:
@@ -62,6 +65,12 @@ langs:
 packages:
 	@echo "Installing essential packages..."
 	sudo ./dev-env-setup/dev-server-setup.sh --packages-only
+
+# Download Ubuntu ISOs (defaults to 24.04.3) with optional env overrides:
+#   UBUNTU_VERSION=24.04.3 ISO_DIR=$HOME/vms/isos DOWNLOAD_SERVER=1 DOWNLOAD_DESKTOP=1
+iso-download:
+	@echo "Downloading Ubuntu ISOs..."
+	ISO_DIR="$$ISO_DIR" UBUNTU_VERSION="$$UBUNTU_VERSION" DOWNLOAD_SERVER="$$DOWNLOAD_SERVER" DOWNLOAD_DESKTOP="$$DOWNLOAD_DESKTOP" ./iso-manager/download_ubuntu_24.04.3.sh
 
 # Build VirtualBox Secure Boot Manager
 build:
