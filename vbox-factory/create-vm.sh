@@ -23,6 +23,7 @@ VM_GATEWAY="${VBOX_DEFAULT_GATEWAY:-192.168.50.1}"
 VM_DNS="${VBOX_DEFAULT_DNS:-8.8.8.8}"
 VM_ISO=""    # auto-select based on type if empty
 VM_START="1" # start after creation
+VM_GUI="0"   # start in headless mode by default
 VM_SSH_PORT="${VBOX_DEFAULT_SSH_PORT:-2222}"
 
 # ==============================================================================
@@ -69,6 +70,7 @@ Static IP (prints Netplan config for post-install):
 Other:
   --iso <path>              Custom ISO path (default: auto from ~/vms/isos)
   --no-start                Don't start VM after creation
+  --gui                     Start VM with GUI (default: headless)
   --help, -h                Show this help
 
 Security (enabled by default via vbox-defaults.sh):
@@ -119,6 +121,7 @@ parse_args() {
             --dns)       VM_DNS="$2"; shift 2 ;;
             --iso)       VM_ISO="$2"; shift 2 ;;
             --no-start)  VM_START="0"; shift ;;
+            --gui)       VM_GUI="1"; shift ;;
             --help|-h)   usage ;;
             *)
                 log_error "Unknown option: $1"
@@ -297,7 +300,9 @@ create_vm() {
     # Start VM
     if [ "$VM_START" = "1" ]; then
         log_section "Starting VM"
-        vbox_start "$VM_NAME" headless
+        local start_mode="headless"
+        [ "$VM_GUI" = "1" ] && start_mode="gui"
+        vbox_start "$VM_NAME" "$start_mode"
         
         echo ""
         echo "Access instructions:"

@@ -49,7 +49,7 @@ help:
 	@echo "  sudo make setup-secureboot           # Setup with Secure Boot"
 	@echo "  make iso-download                    # Download Ubuntu ISOs"
 	@echo "  make vm-create VM_NAME=dev-server VM_IP=192.168.50.100"
-	@echo "  make vm-create VM_NAME=desktop VM_TYPE=desktop"
+	@echo "  make vm-create VM_NAME=desktop VM_TYPE=desktop VM_GUI=1"
 	@echo "  make vm-start VM_NAME=dev-server"
 	@echo "  make vm-stop VM_NAME=dev-server"
 	@echo "  make vm-snapshot VM_NAME=dev-server SNAP_NAME=clean-install"
@@ -149,7 +149,8 @@ endif
 		$(if $(VM_ISO),--iso "$(VM_ISO)") \
 		$(if $(VM_NET),--network "$(VM_NET)") \
 		$(if $(VM_SSH_PORT),--ssh-port "$(VM_SSH_PORT)") \
-		$(if $(filter 1,$(VM_NO_START)),--no-start)
+		$(if $(filter 1,$(VM_NO_START)),--no-start) \
+		$(if $(filter 1,$(VM_GUI)),--gui)
 
 # List all VMs
 vm-list:
