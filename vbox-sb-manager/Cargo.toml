@@ -1,0 +1,66 @@
+[package]
+name = "virtualbox-secure-boot-manager"
+version = "0.1.0-beta"
+edition = "2021"
+authors = ["Alexander La Barge <alex@labarge.dev>"]
+description = "A comprehensive Rust CLI application for managing VirtualBox Secure Boot module signing on Linux systems"
+license = "MIT"
+repository = "https://github.com/alexander-labarge/virtualbox_sb_sign"
+readme = "README.md"
+keywords = ["virtualbox", "secure-boot", "linux", "kernel-modules", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+# CLI framework
+clap = { version = "4.5", features = ["derive", "cargo", "env", "wrap_help"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Terminal output
+colored = "2.1"
+
+# Interactive prompts
+dialoguer = "0.11"
+
+# System calls
+nix = { version = "0.29", features = ["process", "user", "signal"] }
+
+# Process execution
+which = "6.0"
+
+# Regular expressions
+regex = "1.10"
+
+# Path utilities
+walkdir = "2.4"
+
+# Time/Date
+chrono = "0.4"
+
+[dev-dependencies]
+tempfile = "3.8"
+assert_cmd = "2.0"
+predicates = "3.0"
+
+[[bin]]
+name = "virtualbox-sb-manager"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

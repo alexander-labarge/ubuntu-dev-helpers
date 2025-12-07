@@ -1,0 +1,42 @@
+# VirtualBox Module Signing Service (Shell Script Version)
+# 
+# Author: Alexander La Barge
+# Date: 19 Nov 2025
+# Contact: alex@labarge.dev
+# Version: 0.1.0-beta
+#
+# This service automatically recompiles and signs VirtualBox kernel modules
+# after kernel updates, using pre-existing keys in the MOK database.
+# This enables unattended upgrades without breaking VirtualBox.
+#
+# Installation:
+#   sudo cp systemd/vbox-sign-modules.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable vbox-sign-modules.service
+#
+# Note: This service runs after kernel module builds. The signing key
+# passphrase must be provided via environment variable or stdin redirect.
+# For automated operation, consider using a kernel hook instead.
+
+[Unit]
+Description=Sign VirtualBox Kernel Modules for Secure Boot
+After=vboxdrv.service systemd-modules-load.service
+Wants=vboxdrv.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/virtualbox-sb-sign
+ExecStart=/opt/virtualbox-sb-sign/sign-vbox-modules.sh --full
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/var/log /lib/modules
+
+[Install]
+WantedBy=multi-user.target
