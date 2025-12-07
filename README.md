@@ -34,6 +34,11 @@ A comprehensive collection of tools for setting up and managing Ubuntu/Debian-ba
   - [Configuration Variables](#configuration-variables)
   - [SSH Manager Make Targets](#ssh-manager-make-targets)
   - [Copying Scripts to Remote Hosts](#copying-scripts-to-remote-hosts)
+- [PortAppProx - Cloudflare Tunnel Manager](#portapprox---cloudflare-tunnel-manager)
+  - [Quick Start](#quick-start-3)
+  - [How It Works](#how-it-works)
+  - [Usage Examples](#usage-examples)
+  - [GitLab Let's Encrypt Setup](#gitlab-lets-encrypt-setup)
 - [Makefile Targets](#makefile-targets)
 - [Command Reference](#command-reference)
 - [Initial Setup Workflow](#initial-setup-workflow)
@@ -129,10 +134,16 @@ ubuntu-dev-helpers/
 |   +--- README.md               # Component documentation
 |
 +--- vbox-ssh-manager/           # SSH Key Manager
-    |--- config.sh               # Interactive configuration
-    |--- ssh-gen.sh              # SSH key generation
-    |--- ssh-remote-enroll.sh    # Remote key enrollment
-    +--- README.md               # Component documentation
+|   |--- config.sh               # Interactive configuration
+|   |--- ssh-gen.sh              # SSH key generation
+|   |--- ssh-remote-enroll.sh    # Remote key enrollment
+|   +--- README.md               # Component documentation
+|
++--- scripts/                    # Utility Scripts
+    |--- PortAppProx-v3          # Cloudflare tunnel manager
+    |--- gitlab-letsencrypt-setup.sh  # GitLab SSL setup
+    |--- install_gitlab.sh       # GitLab installation script
+    +--- images/                 # Documentation images
 ```
 
 ## Development Environment Setup
@@ -1006,6 +1017,105 @@ make ssh-copy-scripts REMOTE_DIR=/opt/scripts
 ![GitLab Installation on VM](scripts/images/script_install_gitlab.png)
 
 *Screenshot: GitLab EE being installed on a VirtualBox VM after copying scripts via `make ssh-copy-scripts`*
+
+## PortAppProx - Cloudflare Tunnel Manager
+
+PortAppProx v3.0 is an automated service/application port exposure system that creates and manages Cloudflare tunnels with DNS mapping in less than 30 seconds. Deploy applications securely with minimal effort.
+
+![Cloudflare Tunnel Setup](scripts/images/cloudflare_tunnel.png)
+
+*Screenshot: PortAppProx creating a Cloudflare tunnel for GitLab on a VirtualBox VM*
+
+### Quick Start
+
+```bash
+# Copy scripts to remote host
+make ssh-copy-scripts SSH_HOST=192.168.50.100
+
+# On the remote host, run PortAppProx
+./scripts/PortAppProx-v3 --name gitlab --fqdn gitlab.example.org \
+    --hostname gitlab --exposed-ip 127.0.0.1 --exposed-port 80 \
+    --unattended true
+```
+
+### How It Works
+
+1. **Installs cloudflared** - Downloads and installs the Cloudflare daemon if not present
+2. **Authenticates** - Opens browser for Cloudflare authentication (first time only)
+3. **Creates Tunnel** - Sets up a named Cloudflare tunnel
+4. **Configures DNS** - Maps your FQDN to the tunnel automatically
+5. **Creates Systemd Service** - Ensures tunnel starts on boot and auto-restarts
+6. **Verifies Connection** - Tests the tunnel is working via HTTPS
+
+**Traffic Flow:**
+```
+User → HTTPS → Cloudflare Edge → Tunnel → Local Service (HTTP)
+```
+
+### Usage Examples
+
+**Expose GitLab:**
+```bash
+./scripts/PortAppProx-v3 --name gitlab --fqdn gitlab.prebsi.org \
+    --hostname gitlab --exposed-ip 127.0.0.1 --exposed-port 80 \
+    --unattended true
+```
+
+**Expose a Web Application on Port 8080:**
+```bash
+./scripts/PortAppProx-v3 --name myapp --fqdn myapp.example.com \
+    --hostname myapp --exposed-ip 127.0.0.1 --exposed-port 8080 \
+    --unattended true
+```
+
+**With Custom DNS Wait Time:**
+```bash
+./scripts/PortAppProx-v3 --name api --fqdn api.example.com \
+    --hostname api --exposed-ip 127.0.0.1 --exposed-port 3000 \
+    --dns-wait 60 --unattended true
+```
+
+**Arguments:**
+
+| Argument | Description | Required |
+|----------|-------------|----------|
+| `--name` | Tunnel name (used for service naming) | Yes |
+| `--fqdn` | Fully qualified domain name | Yes |
+| `--hostname` | Subdomain/hostname | Yes |
+| `--exposed-ip` | Local IP to expose (usually 127.0.0.1) | Yes |
+| `--exposed-port` | Local port to expose | Yes |
+| `--unattended` | Skip prompts (true/false) | No |
+| `--dns-wait` | DNS propagation wait in seconds (default: 30) | No |
+| `--start-test-server` | Start a Python HTTP test server | No |
+
+**Useful Commands After Setup:**
+```bash
+# View tunnel logs
+sudo journalctl -u cloudflared-gitlab.service -f
+
+# Restart tunnel
+sudo systemctl restart cloudflared-gitlab.service
+
+# Stop tunnel
+sudo systemctl stop cloudflared-gitlab.service
+
+# Check status
+sudo systemctl status cloudflared-gitlab.service
+```
+
+### GitLab Let's Encrypt Setup
+
+If you're exposing GitLab directly (without Cloudflare Tunnel), use the Let's Encrypt setup script:
+
+```bash
+# Interactive mode
+sudo ./scripts/gitlab-letsencrypt-setup.sh
+
+# With arguments
+sudo ./scripts/gitlab-letsencrypt-setup.sh --domain gitlab.example.com --email admin@example.com
+```
+
+**Note:** When using Cloudflare Tunnel, Let's Encrypt is not needed as Cloudflare handles SSL termination at the edge.
 
 ## Makefile Targets
 
