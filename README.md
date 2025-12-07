@@ -20,6 +20,13 @@ A comprehensive collection of tools for setting up and managing Ubuntu/Debian-ba
   - [Rust Binary Usage](#rust-binary-usage)
   - [Shell Scripts Alternative](#shell-scripts-alternative)
   - [Systemd Service Installation](#systemd-service-installation)
+- [VBox Factory (VM Management)](#vbox-factory-vm-management)
+  - [Quick Start](#quick-start-1)
+  - [VM Creation Options](#vm-creation-options)
+  - [VM Lifecycle Commands](#vm-lifecycle-commands)
+  - [Snapshots and Cloning](#snapshots-and-cloning)
+  - [Network Configuration](#network-configuration)
+  - [Automatic KVM Conflict Resolution](#automatic-kvm-conflict-resolution)
 - [Makefile Targets](#makefile-targets)
 - [Command Reference](#command-reference)
 - [Initial Setup Workflow](#initial-setup-workflow)
@@ -92,18 +99,26 @@ ubuntu-dev-helpers/
 |   |--- download_ubuntu_24.04.3.sh  # Ubuntu ISO downloader
 |   +--- README.md               # Component documentation
 |
-+--- vbox-sb-manager/            # VirtualBox Secure Boot Manager
-    |--- Cargo.toml              # Rust project manifest
-    |--- Cargo.lock              # Dependency lock file
-    |--- src/                    # Rust source code
-    |--- tests/                  # Integration tests
-    |--- systemd/                # Systemd service files
-    |--- examples/               # Usage examples
-    |--- sign-vbox-modules.sh    # Shell script version
-    |--- disable-kvm.sh          # KVM management script
-    |--- ARCHITECTURE.md         # Technical architecture
-    |--- PASSWORD-GUIDE.md       # Password management
-    |--- MIGRATION.md            # Migration guide
+|--- vbox-sb-manager/            # VirtualBox Secure Boot Manager
+|   |--- Cargo.toml              # Rust project manifest
+|   |--- Cargo.lock              # Dependency lock file
+|   |--- src/                    # Rust source code
+|   |--- tests/                  # Integration tests
+|   |--- systemd/                # Systemd service files
+|   |--- examples/               # Usage examples
+|   |--- sign-vbox-modules.sh    # Shell script version
+|   |--- disable-kvm.sh          # KVM management script
+|   |--- ARCHITECTURE.md         # Technical architecture
+|   |--- PASSWORD-GUIDE.md       # Password management
+|   |--- MIGRATION.md            # Migration guide
+|   +--- README.md               # Component documentation
+|
++--- vbox-factory/               # VirtualBox VM Factory
+    |--- create-vm.sh            # Main VM creation script
+    |--- start-vm.sh             # VM start with KVM handling
+    |--- vbox-lib.sh             # Reusable function library
+    |--- vbox-defaults.sh        # Computed defaults (RAM, CPUs, etc.)
+    |--- plan.md                 # Implementation plan
     +--- README.md               # Component documentation
 ```
 
@@ -475,6 +490,320 @@ DPkg::Post-Invoke {
 ```
 
 This runs the signing command after every package installation, including kernel updates.
+
+## VBox Factory (VM Management)
+
+VBox Factory provides automated VirtualBox VM provisioning for Ubuntu Server/Desktop with bridged networking, static IP support, and automatic KVM conflict resolution.
+
+### Quick Start
+
+All VM operations are driven via the root **Makefile**:
+
+```bash
+# 1. Download Ubuntu ISOs first
+make iso-download
+
+# 2. Create a desktop VM (default type)
+make vm-create VM_NAME=dev-desktop
+
+# 3. Create with GUI window (for installation)
+make vm-create VM_NAME=dev-desktop VM_GUI=1
+
+# 4. Start an existing VM
+make vm-start VM_NAME=dev-desktop
+
+# 5. List running VMs
+make vm-running
+
+# 6. Stop the VM
+make vm-stop VM_NAME=dev-desktop
+```
+
+### Complete Usage Example
+
+```bash
+# Create a desktop VM with computed defaults (RAM/4, CPUs/4, 500GB disk)
+$ make vm-create VM_NAME=test-desktop VM_GUI=1
+[INFO] Selected ISO: ubuntu-24.04.3-desktop-amd64.iso
+
+=== Creating VM: test-desktop ===
+
+Configuration:
+  Type:       desktop
+  RAM:        28144 MB
+  CPUs:       8
+  VRAM:       128 MB
+  Disk:       512000 MB (500 GB)
+  Network:    bridged
+  EFI:        on
+  SecureBoot: on
+  CPU Pass:   on
+
+[OK] Created VM: test-desktop (ostype: Ubuntu_64)
+[OK] Configured VM: test-desktop (RAM=28144MB, CPUs=8, VRAM=128MB)
+[OK] Created disk: /home/user/vms/disks/test-desktop.vdi (512000MB / 500GB)
+[OK] Attached ISO: ubuntu-24.04.3-desktop-amd64.iso
+[OK] Configured bridged network on eno4
+
+# Start the VM - automatically disables KVM if needed
+$ make vm-start VM_NAME=test-desktop
+[WARN] KVM modules are loaded - VirtualBox cannot run alongside KVM
+[INFO] Automatically disabling KVM...
+[OK] KVM disabled successfully
+VM "test-desktop" has been successfully started.
+[OK] Started test-desktop (gui mode)
+```
+
+### VM Creation Options
+
+```bash
+make vm-create VM_NAME=<name> [OPTIONS]
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VM_NAME` | (required) | Name of the VM |
+| `VM_RAM` | host RAM / 4 | RAM in MB (auto-computed) |
+| `VM_CPUS` | host CPUs / 4 | Number of CPUs (auto-computed) |
+| `VM_DISK` | 512000 (500GB) | Disk size in MB |
+| `VM_TYPE` | desktop | `server` or `desktop` |
+| `VM_NET` | bridged | `bridged` or `nat` |
+| `VM_IFACE` | auto-detect | Bridge interface (e.g., `eth0`, `eno4`) |
+| `VM_IP` | (none) | Static IP - prints Netplan config |
+| `VM_GATEWAY` | 192.168.50.1 | Gateway for static IP |
+| `VM_DNS` | 8.8.8.8 | DNS server for static IP |
+| `VM_ISO` | auto-select | Custom ISO path |
+| `VM_SSH_PORT` | 2222 | SSH port (NAT mode only) |
+| `VM_NO_START` | 0 | Set to `1` to skip auto-start |
+| `VM_GUI` | 0 | Set to `1` to start with GUI window |
+
+#### Default Configuration
+
+Defaults are computed from your host system via `vbox-defaults.sh`:
+
+```bash
+$ ./vbox-factory/vbox-defaults.sh
+--------------------------------------------------------------------
+VBox Factory Defaults (computed from host system)
+--------------------------------------------------------------------
+  Host RAM:        112608 MB
+  Host CPUs:       32
+
+  VM RAM:          28144 MB (host/4, rounded to 16MB)
+  VM CPUs:         8 (host/4, min 1)
+  VM Disk:         512000 MB (500 GB)
+  Server VRAM:     16 MB
+  Desktop VRAM:    128 MB
+
+  Network:         bridged
+  Gateway:         192.168.50.1
+  DNS:             8.8.8.8
+
+  Secure Boot:     on
+  EFI:             on
+  Nested HW Virt:  on
+--------------------------------------------------------------------
+```
+
+#### Security Features (Enabled by Default)
+
+- **EFI firmware** - Modern UEFI boot
+- **Secure Boot** - EFI secure boot mode
+- **CPU passthrough** - Nested VT-x/AMD-V for running VMs inside VMs
+- **Hardware virtualization** - VT-x/AMD-V acceleration
+- **PAE/NX** - Physical Address Extension
+
+#### Examples
+
+```bash
+# Basic desktop VM (uses computed defaults)
+make vm-create VM_NAME=dev-desktop VM_GUI=1
+
+# Server VM with static IP
+make vm-create VM_NAME=web-server VM_TYPE=server VM_IP=192.168.50.100
+
+# Custom specs
+make vm-create VM_NAME=build-box VM_RAM=16384 VM_CPUS=8 VM_DISK=1024000
+
+# Isolated VM using NAT (SSH via localhost:2222)
+make vm-create VM_NAME=sandbox VM_NET=nat VM_SSH_PORT=2223
+
+# Don't start automatically
+make vm-create VM_NAME=template VM_NO_START=1
+```
+
+### VM Lifecycle Commands
+
+| Command | Description |
+|---------|-------------|
+| `make vm-list` | List all VMs |
+| `make vm-running` | List running VMs |
+| `make vm-start VM_NAME=x` | Start VM (GUI mode by default, auto-disables KVM) |
+| `make vm-start VM_NAME=x VM_HEADLESS=1` | Start VM in headless mode |
+| `make vm-stop VM_NAME=x` | Graceful shutdown (ACPI) |
+| `make vm-stop VM_NAME=x VM_FORCE=1` | Force power off |
+| `make vm-delete VM_NAME=x` | Delete VM and disk |
+| `make vm-info VM_NAME=x` | Show VM details |
+| `make vm-eject VM_NAME=x` | Eject ISO after install |
+
+### Snapshots and Cloning
+
+#### Snapshots
+
+```bash
+# Take a snapshot
+make vm-snapshot VM_NAME=dev-server SNAP_NAME=clean-install
+
+# Restore a snapshot
+make vm-restore VM_NAME=dev-server SNAP_NAME=clean-install
+```
+
+#### Cloning
+
+```bash
+# Full clone (independent copy)
+make vm-clone VM_TEMPLATE=ubuntu-base VM_NAME=worker-01
+
+# Linked clone (faster, shares base disk - saves space)
+make vm-clone VM_TEMPLATE=ubuntu-base VM_NAME=worker-02 VM_LINKED=1
+```
+
+### Network Configuration
+
+#### Bridged Network (Default)
+
+- VM gets an IP on your LAN (via DHCP or static)
+- Directly accessible from other machines on the network
+- Best for servers that need to be reachable
+
+#### NAT Network
+
+- VM is isolated behind NAT
+- Access via port forwarding (SSH on localhost:2222 by default)
+- Best for isolated development/testing
+
+```bash
+# Use NAT instead of bridged
+make vm-create VM_NAME=isolated VM_NET=nat
+```
+
+#### Static IP Configuration
+
+When you specify `VM_IP`, the script prints a Netplan configuration to apply after Ubuntu installation:
+
+```yaml
+# /etc/netplan/01-static.yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp0s3:
+      dhcp4: false
+      addresses:
+        - 192.168.50.100/24
+      routes:
+        - to: default
+          via: 192.168.50.1
+      nameservers:
+        addresses:
+          - 8.8.8.8
+```
+
+Apply with:
+```bash
+sudo netplan apply
+```
+
+### Automatic KVM Conflict Resolution
+
+VirtualBox and KVM cannot run simultaneously. When you start a VM, the system automatically:
+
+1. Detects if KVM modules are loaded
+2. Uses `virtualbox-sb-manager kvm disable` to unload them
+3. Starts the VM
+
+```bash
+$ make vm-start VM_NAME=test-desktop
+[WARN] KVM modules are loaded - VirtualBox cannot run alongside KVM
+[INFO] Automatically disabling KVM...
+[OK] KVM disabled successfully
+VM "test-desktop" has been successfully started.
+```
+
+To re-enable KVM after you're done with VirtualBox:
+```bash
+sudo virtualbox-sb-manager kvm enable
+```
+
+### VM Management Quick Reference
+
+| Action | Command |
+|--------|---------|
+| Download ISOs | `make iso-download` |
+| Create desktop VM | `make vm-create VM_NAME=desk VM_GUI=1` |
+| Create server VM | `make vm-create VM_NAME=srv VM_TYPE=server` |
+| Create with static IP | `make vm-create VM_NAME=srv VM_IP=192.168.50.100` |
+| Start with GUI | `make vm-start VM_NAME=srv` |
+| Start headless | `make vm-start VM_NAME=srv VM_HEADLESS=1` |
+| Stop gracefully | `make vm-stop VM_NAME=srv` |
+| Force stop | `make vm-stop VM_NAME=srv VM_FORCE=1` |
+| Take snapshot | `make vm-snapshot VM_NAME=srv SNAP_NAME=clean` |
+| Restore snapshot | `make vm-restore VM_NAME=srv SNAP_NAME=clean` |
+| Clone VM | `make vm-clone VM_TEMPLATE=base VM_NAME=clone` |
+| Linked clone | `make vm-clone VM_TEMPLATE=base VM_NAME=clone VM_LINKED=1` |
+| Delete VM | `make vm-delete VM_NAME=srv` |
+| Eject ISO | `make vm-eject VM_NAME=srv` |
+| Show VM info | `make vm-info VM_NAME=srv` |
+| List all VMs | `make vm-list` |
+| List running | `make vm-running` |
+| Disable KVM manually | `sudo virtualbox-sb-manager kvm disable` |
+| Re-enable KVM | `sudo virtualbox-sb-manager kvm enable` |
+
+### VBox Factory Troubleshooting
+
+#### KVM Conflict Error
+
+If you see:
+```
+VBoxManage: error: VirtualBox can't operate in VMX root mode...
+```
+
+This is automatically handled when using `make vm-start`. If you need to manually fix:
+```bash
+sudo virtualbox-sb-manager kvm disable
+```
+
+#### VM Already Locked Error
+
+If you see:
+```
+VBoxManage: error: The machine 'vm-name' is already locked by a session
+```
+
+The VM is already running. Check with `make vm-running` or connect to it with:
+```bash
+VBoxManage startvm vm-name --type separate
+```
+
+#### Orphaned Disk in VirtualBox Registry
+
+If VM creation fails and leaves a registered disk:
+```bash
+# Check registered disks
+VBoxManage list hdds | grep -A5 <vm-name>
+
+# Remove from registry and delete file
+VBoxManage closemedium disk /home/user/vms/disks/<vm-name>.vdi --delete
+```
+
+#### VM Won't Start After Previous Failure
+
+Clean up completely and recreate:
+```bash
+make vm-delete VM_NAME=<vm-name>
+rm -f ~/vms/disks/<vm-name>.vdi
+make vm-create VM_NAME=<vm-name>
+```
 
 ## Makefile Targets
 
