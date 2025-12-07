@@ -554,6 +554,14 @@ VM "test-desktop" has been successfully started.
 [OK] Started test-desktop (gui mode)
 ```
 
+**VM Creation with GUI - GRUB Boot Menu:**
+
+![VM Creation with GUI](vbox-factory/images/vm-create_gitlab_vm_gui_1.png)
+
+**Post-Install: VirtualBox Guest Additions:**
+
+![VirtualBox Guest Additions Installation](vbox-factory/images/post_install_guest_additions_iso.png)
+
 ### VM Creation Options
 
 ```bash
