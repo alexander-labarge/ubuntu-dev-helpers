@@ -37,8 +37,8 @@ A comprehensive collection of tools for setting up and managing Ubuntu/Debian-ba
 **Automated Full Setup (Recommended):**
 ```bash
 # Clone the repository
-git clone https://github.com/alexander-labarge/dev-server-helpers.git
-cd dev-server-helpers
+git clone https://github.com/alexander-labarge/ubuntu-dev-helpers.git
+cd ubuntu-dev-helpers
 
 # Run full development environment setup (using Makefile)
 sudo make setup
@@ -78,7 +78,7 @@ sudo cp target/release/virtualbox-sb-manager /usr/local/bin/
 ## Project Structure
 
 ```
-dev-server-helpers/
+ubuntu-dev-helpers/
 ├── Makefile                    # Main build/install targets
 ├── README.md                   # This file
 ├── .gitignore                  # Git ignore rules
@@ -913,8 +913,8 @@ MIT License - see LICENSE file for details.
 
 ## Support
 
-- **Repository:** https://github.com/alexander-labarge/dev-server-helpers
-- **Issues:** [GitHub Issues](https://github.com/alexander-labarge/dev-server-helpers/issues)
+- **Repository:** https://github.com/alexander-labarge/ubuntu-dev-helpers
+- **Issues:** [GitHub Issues](https://github.com/alexander-labarge/ubuntu-dev-helpers/issues)
 - **Contact:** alex@labarge.dev
 
 ---
