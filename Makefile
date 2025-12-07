@@ -45,8 +45,8 @@ help:
 	@echo "  sudo make setup                      # Full setup"
 	@echo "  sudo make setup-secureboot           # Setup with Secure Boot"
 	@echo "  make iso-download                    # Download Ubuntu ISOs"
-	@echo "  make vm-create VM_NAME=dev-server VM_IP=192.168.1.50"
-	@echo "  make vm-create VM_NAME=desktop VM_TYPE=desktop VM_RAM=8192"
+	@echo "  make vm-create VM_NAME=dev-server VM_IP=192.168.50.100"
+	@echo "  make vm-create VM_NAME=desktop VM_TYPE=desktop"
 	@echo "  make vm-start VM_NAME=dev-server"
 	@echo "  make vm-stop VM_NAME=dev-server"
 	@echo "  make vm-snapshot VM_NAME=dev-server SNAP_NAME=clean-install"
@@ -156,13 +156,13 @@ vm-list:
 vm-running:
 	@VBoxManage list runningvms
 
-# Start a VM (headless by default)
+# Start a VM (headless by default) - automatically disables KVM if needed
 # Usage: make vm-start VM_NAME=myvm [VM_GUI=1]
 vm-start:
 ifndef VM_NAME
 	$(error VM_NAME is required. Usage: make vm-start VM_NAME=myvm)
 endif
-	@VBoxManage startvm "$(VM_NAME)" --type $(if $(VM_GUI),gui,headless)
+	@./vbox-factory/start-vm.sh "$(VM_NAME)" $(if $(VM_GUI),gui,headless)
 
 # Stop a VM gracefully (use VM_FORCE=1 for immediate poweroff)
 # Usage: make vm-stop VM_NAME=myvm [VM_FORCE=1]
@@ -170,7 +170,7 @@ vm-stop:
 ifndef VM_NAME
 	$(error VM_NAME is required. Usage: make vm-stop VM_NAME=myvm)
 endif
-	@VBoxManage controlvm "$(VM_NAME)" $(if $(VM_FORCE),poweroff,acpipowerbutton)
+	@VBoxManage controlvm "$(VM_NAME)" $(if $(VM_FORCE),poweroff,acpipowerbutton) 2>/dev/null || echo "VM '$(VM_NAME)' is not running or does not exist"
 
 # Delete a VM and its disk
 # Usage: make vm-delete VM_NAME=myvm

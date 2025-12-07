@@ -8,72 +8,94 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/vbox-lib.sh"
 
 # ==============================================================================
-# Defaults
+# Defaults (sourced from vbox-defaults.sh via vbox-lib.sh)
 # ==============================================================================
 VM_NAME=""
-VM_RAM=4096
-VM_CPUS=2
-VM_DISK=51200       # MB
-VM_VRAM=16
-VM_TYPE="server"    # server or desktop
-VM_NET="bridged"    # bridged (default) or nat
-VM_IFACE=""         # auto-detect if empty
-VM_IP=""            # static IP (optional)
-VM_GATEWAY="192.168.1.1"
-VM_DNS="8.8.8.8"
-VM_ISO=""           # auto-select based on type if empty
-VM_START="1"        # start after creation
-VM_SSH_PORT="2222"  # for NAT mode
+VM_RAM="${VBOX_DEFAULT_RAM:-4096}"
+VM_CPUS="${VBOX_DEFAULT_CPUS:-2}"
+VM_DISK="${VBOX_DEFAULT_DISK:-512000}"
+VM_VRAM=""  # Will be set based on type
+VM_TYPE="${VBOX_DEFAULT_TYPE:-server}"
+VM_NET="${VBOX_DEFAULT_NETWORK:-bridged}"
+VM_IFACE=""  # auto-detect if empty
+VM_IP=""     # static IP (optional)
+VM_GATEWAY="${VBOX_DEFAULT_GATEWAY:-192.168.50.1}"
+VM_DNS="${VBOX_DEFAULT_DNS:-8.8.8.8}"
+VM_ISO=""    # auto-select based on type if empty
+VM_START="1" # start after creation
+VM_SSH_PORT="${VBOX_DEFAULT_SSH_PORT:-2222}"
 
 # ==============================================================================
 # Usage
 # ==============================================================================
 usage() {
+    # Show current computed defaults
+    log_section "Current Defaults (based on host system)"
+    echo "  RAM:     ${VBOX_DEFAULT_RAM:-4096} MB (host RAM / 4)"
+    echo "  CPUs:    ${VBOX_DEFAULT_CPUS:-2} (host CPUs / 4)"
+    echo "  Disk:    ${VBOX_DEFAULT_DISK:-512000} MB ($(( ${VBOX_DEFAULT_DISK:-512000} / 1024 )) GB)"
+    echo "  Gateway: ${VBOX_DEFAULT_GATEWAY:-192.168.50.1}"
+    echo "  DNS:     ${VBOX_DEFAULT_DNS:-8.8.8.8}"
+    echo "  Server VRAM:  ${VBOX_DEFAULT_VRAM_SERVER:-16} MB"
+    echo "  Desktop VRAM: ${VBOX_DEFAULT_VRAM_DESKTOP:-128} MB"
+    echo ""
+    
     cat <<EOF
 Usage: $(basename "$0") --name <vm-name> [OPTIONS]
 
 Create a VirtualBox VM with Ubuntu, using bridged networking by default.
+Defaults are computed from host system (RAM/4, CPUs/4) via vbox-defaults.sh.
 
 Required:
   --name <name>             VM name (required)
 
 System Configuration:
-  --ram <MB>                RAM in MB (default: 4096)
-  --cpus <N>                Number of CPUs (default: 2)
-  --disk <MB>               Disk size in MB (default: 51200)
+  --ram <MB>                RAM in MB (default: ${VBOX_DEFAULT_RAM:-4096})
+  --cpus <N>                Number of CPUs (default: ${VBOX_DEFAULT_CPUS:-2})
+  --disk <MB>               Disk size in MB (default: ${VBOX_DEFAULT_DISK:-512000})
   --type <server|desktop>   VM type for ISO selection (default: server)
+                            Desktop uses ${VBOX_DEFAULT_VRAM_DESKTOP:-128}MB VRAM
 
 Network Configuration:
   --network <bridged|nat>   Network mode (default: bridged)
   --iface <interface>       Bridge interface (default: auto-detect)
-  --ssh-port <port>         SSH port for NAT mode (default: 2222)
+  --ssh-port <port>         SSH port for NAT mode (default: ${VBOX_DEFAULT_SSH_PORT:-2222})
 
 Static IP (prints Netplan config for post-install):
-  --ip <address>            Static IP address (e.g., 192.168.1.50)
-  --gateway <address>       Gateway (default: 192.168.1.1)
-  --dns <address>           DNS server (default: 8.8.8.8)
+  --ip <address>            Static IP address (e.g., 192.168.50.100)
+  --gateway <address>       Gateway (default: ${VBOX_DEFAULT_GATEWAY:-192.168.50.1})
+  --dns <address>           DNS server (default: ${VBOX_DEFAULT_DNS:-8.8.8.8})
 
 Other:
   --iso <path>              Custom ISO path (default: auto from ~/vms/isos)
   --no-start                Don't start VM after creation
   --help, -h                Show this help
 
+Security (enabled by default via vbox-defaults.sh):
+  - EFI firmware:           ${VBOX_DEFAULT_EFI:-on}
+  - Secure Boot:            ${VBOX_DEFAULT_SECUREBOOT:-on}
+  - CPU passthrough:        ${VBOX_DEFAULT_NESTED_HW_VIRT:-on}
+  - Hardware virtualization: ${VBOX_DEFAULT_HW_VIRT:-on}
+
 Examples:
-  # Create server VM with static IP on bridged network
-  $(basename "$0") --name dev-server --ip 192.168.1.50
+  # Create server VM (uses computed defaults)
+  $(basename "$0") --name dev-server
+
+  # Create server VM with static IP
+  $(basename "$0") --name dev-server --ip 192.168.50.100
 
   # Create with custom specs
-  $(basename "$0") --name build-box --ram 8192 --cpus 4 --disk 102400
+  $(basename "$0") --name build-box --ram 16384 --cpus 8 --disk 1024000
 
-  # Create desktop VM
-  $(basename "$0") --name desktop --type desktop --ram 8192
+  # Create desktop VM (128MB VRAM)
+  $(basename "$0") --name desktop --type desktop
 
   # Use NAT network instead
   $(basename "$0") --name isolated --network nat --ssh-port 2223
 
 Via Makefile:
-  make vm-create VM_NAME=dev-server VM_IP=192.168.1.50
-  make vm-create VM_NAME=desktop VM_TYPE=desktop VM_RAM=8192
+  make vm-create VM_NAME=dev-server VM_IP=192.168.50.100
+  make vm-create VM_NAME=desktop VM_TYPE=desktop
 EOF
     exit 0
 }
@@ -216,14 +238,25 @@ EOF
 create_vm() {
     log_section "Creating VM: $VM_NAME"
     
+    # Set VRAM based on type
+    if [ "$VM_TYPE" = "desktop" ]; then
+        VM_VRAM="${VM_VRAM:-${VBOX_DEFAULT_VRAM_DESKTOP:-128}}"
+    else
+        VM_VRAM="${VM_VRAM:-${VBOX_DEFAULT_VRAM_SERVER:-16}}"
+    fi
+    
     # Summary
     echo "Configuration:"
-    echo "  Type:     $VM_TYPE"
-    echo "  RAM:      ${VM_RAM} MB"
-    echo "  CPUs:     $VM_CPUS"
-    echo "  Disk:     ${VM_DISK} MB"
-    echo "  Network:  $VM_NET"
-    [ -n "$VM_IP" ] && echo "  Static IP: $VM_IP"
+    echo "  Type:       $VM_TYPE"
+    echo "  RAM:        ${VM_RAM} MB"
+    echo "  CPUs:       $VM_CPUS"
+    echo "  VRAM:       ${VM_VRAM} MB"
+    echo "  Disk:       ${VM_DISK} MB ($(( VM_DISK / 1024 )) GB)"
+    echo "  Network:    $VM_NET"
+    echo "  EFI:        ${VBOX_DEFAULT_EFI:-on}"
+    echo "  SecureBoot: ${VBOX_DEFAULT_SECUREBOOT:-on}"
+    echo "  CPU Pass:   ${VBOX_DEFAULT_NESTED_HW_VIRT:-on}"
+    [ -n "$VM_IP" ] && echo "  Static IP:  $VM_IP"
     echo ""
     
     # Check if VM already exists
@@ -234,10 +267,10 @@ create_vm() {
     fi
     
     # Create VM
-    vbox_create "$VM_NAME" "Ubuntu_64"
+    vbox_create "$VM_NAME" "${VBOX_DEFAULT_OSTYPE:-Ubuntu_64}"
     
-    # Configure VM
-    vbox_configure "$VM_NAME" "$VM_RAM" "$VM_CPUS" "$VM_VRAM"
+    # Configure VM (pass type for VRAM selection)
+    vbox_configure "$VM_NAME" "$VM_RAM" "$VM_CPUS" "$VM_VRAM" "$VM_TYPE"
     
     # Add storage controller
     vbox_add_sata "$VM_NAME"

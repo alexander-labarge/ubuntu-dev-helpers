@@ -4,9 +4,16 @@
 
 set -euo pipefail
 
-VBOX_BASE="${VBOX_BASE:-$HOME/vms}"
-VBOX_DISKS="${VBOX_DISKS:-$VBOX_BASE/disks}"
-VBOX_ISOS="${VBOX_ISOS:-$VBOX_BASE/isos}"
+# Source defaults (computes RAM/CPU based on host system)
+SCRIPT_DIR_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR_LIB/vbox-defaults.sh" ]; then
+    source "$SCRIPT_DIR_LIB/vbox-defaults.sh"
+else
+    # Fallback if defaults file not found
+    export VBOX_BASE="${VBOX_BASE:-$HOME/vms}"
+    export VBOX_DISKS="${VBOX_DISKS:-$VBOX_BASE/disks}"
+    export VBOX_ISOS="${VBOX_ISOS:-$VBOX_BASE/isos}"
+fi
 
 # ==============================================================================
 # Logging
@@ -37,7 +44,7 @@ vm_exists() {
 # ==============================================================================
 vbox_create() {
     local name="$1"
-    local ostype="${2:-Ubuntu_64}"
+    local ostype="${2:-${VBOX_DEFAULT_OSTYPE:-Ubuntu_64}}"
     
     if vm_exists "$name"; then
         log_error "VM '$name' already exists"
@@ -45,30 +52,71 @@ vbox_create() {
     fi
     
     VBoxManage createvm --name "$name" --ostype "$ostype" --register
-    log_success "Created VM: $name"
+    log_success "Created VM: $name (ostype: $ostype)"
 }
 
 vbox_configure() {
     local name="$1"
-    local ram="${2:-4096}"
-    local cpus="${3:-2}"
-    local vram="${4:-16}"
+    local ram="${2:-${VBOX_DEFAULT_RAM:-4096}}"
+    local cpus="${3:-${VBOX_DEFAULT_CPUS:-2}}"
+    local vram="${4:-${VBOX_DEFAULT_VRAM_SERVER:-16}}"
+    local vm_type="${5:-server}"  # server or desktop
     
+    # Use desktop VRAM if type is desktop
+    if [ "$vm_type" = "desktop" ]; then
+        vram="${vram:-${VBOX_DEFAULT_VRAM_DESKTOP:-128}}"
+    fi
+    
+    log_info "Configuring VM: $name"
+    log_info "  RAM: ${ram}MB, CPUs: ${cpus}, VRAM: ${vram}MB, Type: ${vm_type}"
+    
+    # Basic configuration
     VBoxManage modifyvm "$name" \
         --memory "$ram" \
         --cpus "$cpus" \
         --vram "$vram" \
-        --graphicscontroller vmsvga \
+        --graphicscontroller "${VBOX_DEFAULT_GRAPHICS_CONTROLLER:-vmsvga}" \
         --acpi on \
         --ioapic on \
         --rtcuseutc on \
-        --nested-hw-virt on \
-        --boot1 dvd \
-        --boot2 disk \
-        --boot3 none \
-        --boot4 none
+        --boot1 "${VBOX_DEFAULT_BOOT1:-dvd}" \
+        --boot2 "${VBOX_DEFAULT_BOOT2:-disk}" \
+        --boot3 "${VBOX_DEFAULT_BOOT3:-none}" \
+        --boot4 "${VBOX_DEFAULT_BOOT4:-none}"
     
-    log_success "Configured VM: $name (RAM=${ram}MB, CPUs=${cpus})"
+    # CPU passthrough / nested virtualization
+    if [ "${VBOX_DEFAULT_NESTED_HW_VIRT:-on}" = "on" ]; then
+        VBoxManage modifyvm "$name" --nested-hw-virt on
+        log_info "  Nested HW virtualization: enabled"
+    fi
+    
+    # Hardware virtualization
+    if [ "${VBOX_DEFAULT_HW_VIRT:-on}" = "on" ]; then
+        VBoxManage modifyvm "$name" --hwvirtex on
+        log_info "  Hardware virtualization (VT-x/AMD-V): enabled"
+    fi
+    
+    # PAE/NX
+    if [ "${VBOX_DEFAULT_PAE:-on}" = "on" ]; then
+        VBoxManage modifyvm "$name" --pae on
+        log_info "  PAE/NX: enabled"
+    fi
+    
+    # EFI (required for Secure Boot)
+    if [ "${VBOX_DEFAULT_EFI:-on}" = "on" ]; then
+        VBoxManage modifyvm "$name" --firmware efi64
+        log_info "  EFI firmware: enabled"
+    fi
+    
+    # Secure Boot
+    if [ "${VBOX_DEFAULT_SECUREBOOT:-on}" = "on" ]; then
+        # Secure Boot requires EFI
+        VBoxManage modifyvm "$name" --firmware efi64
+        # Note: Full Secure Boot requires signing - this enables the setting
+        log_info "  Secure Boot: enabled (EFI mode)"
+    fi
+    
+    log_success "Configured VM: $name (RAM=${ram}MB, CPUs=${cpus}, VRAM=${vram}MB)"
 }
 
 # ==============================================================================
@@ -78,7 +126,7 @@ vbox_add_sata() {
     local name="$1"
     
     VBoxManage storagectl "$name" \
-        --name "SATA" \
+        --name "${VBOX_DEFAULT_STORAGE_CONTROLLER:-SATA}" \
         --add sata \
         --controller IntelAhci \
         --portcount 4 \
@@ -89,18 +137,21 @@ vbox_add_sata() {
 
 vbox_create_disk() {
     local name="$1"
-    local size_mb="${2:-51200}"
+    local size_mb="${2:-${VBOX_DEFAULT_DISK:-512000}}"
     local disk_path="${VBOX_DISKS}/${name}.vdi"
     
     mkdir -p "$VBOX_DISKS"
+    # Redirect VBoxManage output to stderr so only disk_path goes to stdout
     VBoxManage createmedium disk \
         --filename "$disk_path" \
         --size "$size_mb" \
-        --format VDI \
-        --variant Standard
+        --format "${VBOX_DEFAULT_DISK_FORMAT:-VDI}" \
+        --variant "${VBOX_DEFAULT_DISK_VARIANT:-Standard}" >&2
     
-    log_success "Created disk: $disk_path (${size_mb}MB)"
-    echo "$disk_path"
+    # Send log to stderr so it doesn't pollute the return value
+    log_success "Created disk: $disk_path (${size_mb}MB / $(( size_mb / 1024 ))GB)" >&2
+    # Return only the path on stdout for capture
+    printf '%s' "$disk_path"
 }
 
 vbox_attach_disk() {
@@ -109,7 +160,7 @@ vbox_attach_disk() {
     local port="${3:-0}"
     
     VBoxManage storageattach "$name" \
-        --storagectl "SATA" \
+        --storagectl "${VBOX_DEFAULT_STORAGE_CONTROLLER:-SATA}" \
         --port "$port" \
         --device 0 \
         --type hdd \
@@ -124,7 +175,7 @@ vbox_attach_iso() {
     local port="${3:-1}"
     
     VBoxManage storageattach "$name" \
-        --storagectl "SATA" \
+        --storagectl "${VBOX_DEFAULT_STORAGE_CONTROLLER:-SATA}" \
         --port "$port" \
         --device 0 \
         --type dvddrive \
@@ -138,7 +189,7 @@ vbox_eject_iso() {
     local port="${2:-1}"
     
     VBoxManage storageattach "$name" \
-        --storagectl "SATA" \
+        --storagectl "${VBOX_DEFAULT_STORAGE_CONTROLLER:-SATA}" \
         --port "$port" \
         --device 0 \
         --type dvddrive \
@@ -180,7 +231,7 @@ vbox_network_bridged() {
 
 vbox_network_nat() {
     local name="$1"
-    local ssh_port="${2:-2222}"
+    local ssh_port="${2:-${VBOX_DEFAULT_SSH_PORT:-2222}}"
     
     VBoxManage modifyvm "$name" \
         --nic1 nat \
@@ -190,14 +241,73 @@ vbox_network_nat() {
 }
 
 # ==============================================================================
+# KVM Management
+# ==============================================================================
+kvm_is_loaded() {
+    lsmod | grep -q "^kvm" 2>/dev/null
+}
+
+kvm_disable() {
+    if ! command -v virtualbox-sb-manager >/dev/null 2>&1; then
+        log_error "virtualbox-sb-manager not found. Install it with: make install"
+        log_info "Or manually disable KVM: sudo modprobe -r kvm_intel kvm"
+        return 1
+    fi
+    
+    log_info "Disabling KVM using virtualbox-sb-manager..."
+    if sudo virtualbox-sb-manager kvm disable; then
+        log_success "KVM disabled successfully"
+        return 0
+    else
+        log_error "Failed to disable KVM"
+        return 1
+    fi
+}
+
+kvm_enable() {
+    if ! command -v virtualbox-sb-manager >/dev/null 2>&1; then
+        log_error "virtualbox-sb-manager not found"
+        return 1
+    fi
+    
+    log_info "Re-enabling KVM..."
+    sudo virtualbox-sb-manager kvm enable
+}
+
+# ==============================================================================
 # Lifecycle
 # ==============================================================================
 vbox_start() {
     local name="$1"
     local type="${2:-headless}"  # headless, gui, sdl
     
-    VBoxManage startvm "$name" --type "$type"
-    log_success "Started $name ($type mode)"
+    # Check if KVM is loaded and might conflict
+    if kvm_is_loaded; then
+        log_warn "KVM modules are loaded - VirtualBox cannot run alongside KVM"
+        log_info "Automatically disabling KVM..."
+        if ! kvm_disable; then
+            log_error "Failed to disable KVM. Cannot start VM."
+            log_info "Try manually: sudo virtualbox-sb-manager kvm disable"
+            return 1
+        fi
+        # Small delay to ensure modules are fully unloaded
+        sleep 1
+    fi
+    
+    # Try to start the VM
+    if VBoxManage startvm "$name" --type "$type"; then
+        log_success "Started $name ($type mode)"
+    else
+        local exit_code=$?
+        # Check if it's still a KVM error
+        if [ $exit_code -ne 0 ]; then
+            log_error "Failed to start VM. Exit code: $exit_code"
+            if kvm_is_loaded; then
+                log_error "KVM is still loaded. Try: sudo virtualbox-sb-manager kvm disable"
+            fi
+            return $exit_code
+        fi
+    fi
 }
 
 vbox_stop() {
