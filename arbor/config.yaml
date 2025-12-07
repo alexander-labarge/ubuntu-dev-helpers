@@ -1,0 +1,33 @@
+server:
+  host: "127.0.0.1"
+  port: 8196
+  upload_dir: "./uploads"
+  max_file_size: 104857600  # 100MB in bytes
+  max_session_size: 107374182400  # 100GB in bytes
+  chunk_size: 1048576  # 1MB in bytes
+  workers: 16
+
+compression:
+  enabled: true
+  algorithms: ["gzip", "br"]
+  level: 6
+
+security:
+  auth_enabled: false
+  allowed_extensions: []  # Empty = allow all
+  blocked_extensions: [".exe", ".bat", ".cmd", ".sh"]
+  rate_limit: "100/minute"
+  secret_key: "change-me-in-production-use-strong-random-key"
+
+gitlab:
+  enabled: false
+  repository_url: ""
+  ssh_key_path: ""
+  gpg_key_id: ""
+  auto_push: false
+  branch: "main"
+
+logging:
+  level: "INFO"
+  file: null
+  format: "json"

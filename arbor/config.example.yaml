@@ -1,0 +1,84 @@
+# Example ARBOR Configuration File
+# This file demonstrates all available configuration options
+
+server:
+  # Host to bind the server to (default: 127.0.0.1 for localhost only)
+  # Use "0.0.0.0" to bind to all interfaces (be careful with security!)
+  host: "127.0.0.1"
+  
+  # Port to listen on
+  port: 8196
+  
+  # Directory where uploaded files will be stored
+  upload_dir: "./uploads"
+  
+  # Maximum size for a single file (in bytes)
+  # Common values: 1048576 (1MB), 104857600 (100MB), 1073741824 (1GB)
+  max_file_size: 104857600
+  
+  # Maximum total size for an upload session (in bytes)
+  # Common values: 1073741824 (1GB), 10737418240 (10GB), 107374182400 (100GB)
+  max_session_size: 107374182400
+  
+  # Chunk size for file transfers (in bytes)
+  chunk_size: 1048576
+  
+  # Number of concurrent worker threads
+  workers: 16
+
+compression:
+  # Enable/disable compression support
+  enabled: true
+  
+  # Supported compression algorithms
+  algorithms: ["gzip", "br"]
+  
+  # Compression level (1-9, where 9 is highest compression)
+  level: 6
+
+security:
+  # Enable authentication (requires users to log in)
+  auth_enabled: false
+  
+  # Allowed file extensions (empty list = allow all except blocked)
+  # Example: [".txt", ".pdf", ".jpg", ".png"]
+  allowed_extensions: []
+  
+  # Blocked file extensions (always blocked regardless of allowed_extensions)
+  blocked_extensions: [".exe", ".bat", ".cmd", ".sh", ".ps1"]
+  
+  # Rate limiting configuration
+  rate_limit: "100/minute"
+  
+  # Secret key for JWT tokens (CHANGE THIS IN PRODUCTION!)
+  # Generate a secure key with: python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+  secret_key: "CHANGE-ME-IN-PRODUCTION-USE-STRONG-RANDOM-KEY"
+
+gitlab:
+  # Enable GitLab integration for automatic push
+  enabled: false
+  
+  # GitLab repository URL (SSH format: git@gitlab.com:username/repo.git)
+  repository_url: ""
+  
+  # Path to SSH private key for authentication
+  ssh_key_path: ""
+  
+  # GPG key ID for signing commits (optional)
+  gpg_key_id: ""
+  
+  # Automatically push after upload completion
+  auto_push: false
+  
+  # Target branch for pushing
+  branch: "main"
+
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+  
+  # Log file path (null means log to console)
+  file: null
+  
+  # Log format: json or text
+  format: "json"

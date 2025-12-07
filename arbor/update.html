@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Update - 5 Dec 25</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #0d1117;
+        color: #c9d1d9;
+        line-height: 1.7;
+        padding: 40px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    header {
+        border-bottom: 1px solid #30363d;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+    }
+
+    h1 {
+        color: #58a6ff;
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+    }
+
+    .meta {
+        color: #8b949e;
+        font-size: 0.95rem;
+    }
+
+    h2 {
+        color: #58a6ff;
+        font-size: 1.3rem;
+        margin-top: 35px;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #21262d;
+    }
+
+    h3 {
+        color: #f0f6fc;
+        font-size: 1.1rem;
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+
+    p {
+        margin-bottom: 15px;
+        color: #c9d1d9;
+    }
+
+    .objectives {
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+
+    .objectives ol {
+        margin-left: 20px;
+    }
+
+    .objectives li {
+        margin-bottom: 8px;
+    }
+
+    .bluf {
+        background: linear-gradient(135deg, #1a2332 0%, #0d1117 100%);
+        border-left: 4px solid #238636;
+        padding: 20px 25px;
+        margin: 30px 0;
+        border-radius: 0 6px 6px 0;
+    }
+
+    .bluf-label {
+        color: #238636;
+        font-weight: 700;
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+    }
+
+    .stat {
+        color: #58a6ff;
+        font-weight: 600;
+    }
+
+    .highlight {
+        color: #7ee787;
+        font-weight: 600;
+    }
+
+    section {
+        margin-bottom: 30px;
+    }
+
+    .next-steps {
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        padding: 25px;
+        margin-top: 20px;
+    }
+
+    footer {
+        margin-top: 50px;
+        padding-top: 20px;
+        border-top: 1px solid #30363d;
+        color: #8b949e;
+        font-size: 0.9rem;
+    }
+</style>
+
+</head>
+<body>
+    <header>
+        <h1>Project Update: Sunday Goals & Progress</h1>
+        <p class="meta">Alexander La Barge | 5 Dec 25</p>
+    </header>
+<section>
+    <h2>Sunday Objectives</h2>
+    <div class="objectives">
+        <ol>
+            <li>Finish setting up local 2TB GitLab instance</li>
+            <li>Map all current work to Phase 1 requirements (due 15 Dec 25) as complete</li>
+            <li>Deliver detailed Phase 2 plan to Brian</li>
+        </ol>
+    </div>
+</section>
+
+<section>
+    <h2>Completed Work</h2>
+
+    <h3>Chunked Upload Solution</h3>
+    <p>Built a Python-based web uploader allowing users to select a "day of capture" (up to 100GB). It recursively copies all content and pushes directly to GitLab with LFS support, including a failover mechanism that performs continuous <code>git clone</code> attempts until hash verification confirms completion.</p>
+
+    <h3>Baseline Benchmarks & Documentation</h3>
+    <p>Completed benchmarks across YOLO8-12 with source code for each module documented alongside a clear "where are we now" status. This will be formatted as a living white paper—including handwritten notes, screenshots, and every trial, failure, and success—so the team can follow my reasoning and suggest improvements during project meetings. This becomes draft documentation for end-of-project deliverables.</p>
+</section>
+
+<section>
+    <div class="bluf">
+        <div class="bluf-label">BLUF</div>
+        <p>BSI's CLAHE contrast enhancement + temporal sidestep (bridging toward ConvLSTM subroutine integration) recovers <span class="highlight">30% of previously missed frames</span>, yielding a <span class="stat">+4% detection increase</span> to <span class="stat">98.91%</span> across all 100m MSC videos to date.</p>
+    </div>
+</section>
+
+<section>
+    <h2>Next Steps</h2>
+    <div class="next-steps">
+        <p>This upload module establishes the foundation for automated raw capture storage with structured metadata (detected bounding box locations) and enables Label Studio integration for annotating edge cases—weapons, prone positions, partial concealments—to train supplementary model weights.</p>
+
+        <h3>Dashboard v2 & Spectre Inference Engine</h3>
+        <p>The module integrates with Dashboard v2, which runs the Spectre inference engine (our YOLO-based solution) during live optic capture. This enables simultaneous capture, detection, annotation, and metadata extraction—with a side-by-side view of raw thermal feed versus detected humans. All results write directly to the database, feeding the training pipeline.</p>
+
+        <p>The first targeted model: <span class="highlight">rifle detection</span>. Additionally, based on the substantial temperature contrast data collected, we now have <span class="stat">1,000+ labeled data points</span> to train YOLO to discern between standard camouflage and MSC-type thermal suppression equipment.</p>
+
+        <p>The upload module will be reused in Dashboard v2 via a new "Upload" tab running the Python server with a pre-shared GitLab key. We can later swap the IP and key for a BSI cloud instance to enable multi-site backup once we iron out the kinks.</p>
+    </div>
+</section>
+
+<footer>
+    <p>Brilliant Solution, Inc.</p>
+</footer>
+
+</body>
+</html>
