@@ -1472,9 +1472,11 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
 
         .file-icon {
             display: inline-block;
-            width: 20px;
+            min-width: 50px;
             margin-right: 10px;
-            text-align: center;
+            text-align: left;
+            color: var(--accent-color);
+            font-size: 0.85em;
         }
 
         .file-name {
@@ -1755,6 +1757,18 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
             }
         }
 
+        function formatDuration(seconds) {
+            if (!seconds || seconds < 0) return '';
+            if (seconds < 60) return Math.round(seconds) + 's';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ' + Math.round(seconds % 60) + 's';
+            return Math.floor(seconds / 3600) + 'h ' + Math.floor((seconds % 3600) / 60) + 'm';
+        }
+
+        function formatSpeed(bytesPerSec) {
+            if (!bytesPerSec || bytesPerSec <= 0) return '';
+            return formatBytes(bytesPerSec) + '/s';
+        }
+
         function renderSessions(sessions) {
             const container = document.getElementById('sessionsContainer');
             container.innerHTML = '';
@@ -1763,12 +1777,21 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
                 const sessionDiv = document.createElement('div');
                 sessionDiv.className = 'session-container';
                 
+                // Build transfer stats string
+                let statsStr = `${session.fileCount} files · ${formatBytes(session.size)}`;
+                if (session.transferDuration) {
+                    statsStr += ` · ${formatDuration(session.transferDuration)}`;
+                }
+                if (session.transferSpeed) {
+                    statsStr += ` @ ${formatSpeed(session.transferSpeed)}`;
+                }
+                
                 sessionDiv.innerHTML = `
                     <div class=\"session-header\" onclick=\"toggleSession(${index})\">
                         <div class=\"session-info\">
                             <div class=\"session-date\">${session.baseDirectory || 'Upload'} - ${formatDate(session.date)}</div>
                             <div class=\"session-meta\">
-                                ${session.fileCount} files · ${formatBytes(session.size)}
+                                ${statsStr}
                             </div>
                         </div>
                         <div class=\"session-actions\" onclick=\"event.stopPropagation();\">
@@ -2147,6 +2170,8 @@ async def list_files(username: str = Depends(get_current_user)):
             session_name = session_dir.name
             session_time = session_dir.stat().st_mtime
             base_directory = None
+            transfer_duration = None
+            transfer_speed = None
             
             if manifest_path.exists():
                 try:
@@ -2154,6 +2179,13 @@ async def list_files(username: str = Depends(get_current_user)):
                         manifest = json.loads(await f.read())
                         session_time = manifest.get("completed_at", session_time)
                         base_directory = manifest.get("base_directory")
+                        created_at = manifest.get("created_at")
+                        completed_at = manifest.get("completed_at")
+                        total_bytes = manifest.get("transferred_bytes", 0)
+                        if created_at and completed_at:
+                            transfer_duration = completed_at - created_at
+                            if transfer_duration > 0:
+                                transfer_speed = total_bytes / transfer_duration
                 except:
                     pass
             
@@ -2179,6 +2211,8 @@ async def list_files(username: str = Depends(get_current_user)):
                     "name": session_name,
                     "date": session_time,
                     "baseDirectory": base_directory,
+                    "transferDuration": transfer_duration,
+                    "transferSpeed": transfer_speed,
                     "files": files,
                     "fileCount": len(files),
                     "size": session_size
