@@ -1740,7 +1740,7 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
             }
         }
 
-        async function downloadSession(sessionName) {
+        async function downloadSession(sessionName, displayName) {
             try {
                 const headers = {};
                 if (authToken) {
@@ -1759,11 +1759,21 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
                     return;
                 }
                 
+                // Try to get filename from Content-Disposition header, fallback to displayName
+                let filename = (displayName || sessionName) + '.zip';
+                const contentDisposition = response.headers.get('Content-Disposition');
+                if (contentDisposition) {
+                    const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+                    if (match && match[1]) {
+                        filename = match[1];
+                    }
+                }
+                
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = sessionName + '.zip';
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
@@ -1853,7 +1863,7 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
                             </div>
                         </div>
                         <div class=\"session-actions\" onclick=\"event.stopPropagation();\">
-                            <button class=\"btn btn-secondary\" onclick=\"event.stopPropagation(); downloadSession('${session.name}')\">
+                            <button class=\"btn btn-secondary\" onclick=\"event.stopPropagation(); downloadSession('${session.name}', '${session.baseDirectory || session.name}')\">
                                 Download Session
                             </button>
                         </div>
