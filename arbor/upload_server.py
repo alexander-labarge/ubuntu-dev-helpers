@@ -2287,25 +2287,8 @@ async def list_files(username: str = Depends(get_current_user)):
     }
 
 
-@app.get("/api/files/{file_path:path}")
-async def download_file(
-    file_path: str,
-    username: str = Depends(get_current_user)
-):
-    """Download a specific file"""
-    safe_path = sanitize_path(file_path)
-    full_path = Path(config.server.upload_dir) / username / safe_path
-    
-    if not full_path.exists() or not full_path.is_file():
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    return FileResponse(
-        path=str(full_path),
-        filename=full_path.name,
-        media_type='application/octet-stream'
-    )
-
-
+# NOTE: Session archive endpoint must come BEFORE the generic file download endpoint
+# because FastAPI matches routes in order, and {file_path:path} would match everything
 @app.get("/api/files/session/{session_id}/archive")
 async def download_session_archive(
     session_id: str,
@@ -2350,6 +2333,25 @@ async def download_session_archive(
         if tmp_path and tmp_path.exists():
             tmp_path.unlink(missing_ok=True)
         raise HTTPException(status_code=500, detail=f"Failed to create archive: {e}")
+
+
+@app.get("/api/files/{file_path:path}")
+async def download_file(
+    file_path: str,
+    username: str = Depends(get_current_user)
+):
+    """Download a specific file"""
+    safe_path = sanitize_path(file_path)
+    full_path = Path(config.server.upload_dir) / username / safe_path
+    
+    if not full_path.exists() or not full_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(
+        path=str(full_path),
+        filename=full_path.name,
+        media_type='application/octet-stream'
+    )
 
 
 @app.post("/api/gitlab/push")
