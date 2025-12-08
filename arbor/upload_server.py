@@ -133,6 +133,7 @@ class UploadSession(BaseModel):
     transferred_bytes: int = 0
     status: str = "active"  # active, paused, completed, cancelled, failed
     current_file: Optional[str] = None
+    base_directory: Optional[str] = None
     files_metadata: List[FileMetadata] = []
     errors: List[Dict[str, str]] = []
 
@@ -1546,7 +1547,7 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
     <!-- Auth Section -->
     <div id=\"authSection\" class=\"auth-overlay\">
         <div class=\"auth-container\">
-            <h2>🔐 Authentication Required</h2>
+            <h2>Authentication Required</h2>
             <p style=\"color: var(--text-secondary); margin-bottom: 20px;\">Please log in to access the file explorer</p>
             <input type=\"text\" id=\"username\" placeholder=\"Username\" style=\"width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);\">
             <input type=\"password\" id=\"password\" placeholder=\"Password\" style=\"width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary);\">
@@ -1558,7 +1559,7 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
     <div id=\"mainSection\" class=\"container\" style=\"display: none;\">
         <div class=\"header\">
             <div>
-                <h1>📁 ARBOR File Explorer</h1>
+                <h1>ARBOR File Explorer</h1>
                 <div class=\"header-subtitle\">Browse and download your uploaded files</div>
             </div>
             <div class=\"nav-links\">
@@ -1583,7 +1584,7 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
 
         <div class=\"toolbar\">
             <input type=\"text\" class=\"search-box\" id=\"searchBox\" placeholder=\"Search files...\">
-            <button class=\"btn\" onclick=\"loadFiles()\">🔄 Refresh</button>
+            <button class=\"btn\" onclick=\"loadFiles()\">Refresh</button>
         </div>
 
         <div id=\"loadingState\" class=\"loading\">
@@ -1594,7 +1595,7 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
         <div id=\"sessionsContainer\"></div>
 
         <div id=\"emptyState\" class=\"empty-state\" style=\"display: none;\">
-            <div class=\"empty-state-icon\">📂</div>
+            <div class=\"empty-state-icon\"></div>
             <h3>No files uploaded yet</h3>
             <p>Upload some directories to see them here</p>
             <a href=\"/\" class=\"btn\" style=\"margin-top: 20px;\">Start Uploading</a>
@@ -1681,19 +1682,19 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
         function getFileIcon(filename) {
             const ext = filename.split('.').pop().toLowerCase();
             const icons = {
-                'pdf': '📄',
-                'doc': '📝', 'docx': '📝',
-                'xls': '📊', 'xlsx': '📊',
-                'ppt': '📊', 'pptx': '📊',
-                'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️', 'bmp': '🖼️',
-                'mp4': '🎬', 'avi': '🎬', 'mov': '🎬',
-                'mp3': '🎵', 'wav': '🎵', 'flac': '🎵',
-                'zip': '📦', 'rar': '📦', 'tar': '📦', 'gz': '📦',
-                'txt': '📃', 'md': '📃',
-                'py': '🐍', 'js': '📜', 'html': '🌐', 'css': '🎨',
-                'json': '{ }', 'xml': '< >', 'yaml': '⚙️', 'yml': '⚙️'
+                'pdf': '[PDF]',
+                'doc': '[DOC]', 'docx': '[DOC]',
+                'xls': '[XLS]', 'xlsx': '[XLS]',
+                'ppt': '[PPT]', 'pptx': '[PPT]',
+                'jpg': '[IMG]', 'jpeg': '[IMG]', 'png': '[IMG]', 'gif': '[IMG]', 'bmp': '[IMG]',
+                'mp4': '[VID]', 'avi': '[VID]', 'mov': '[VID]',
+                'mp3': '[AUD]', 'wav': '[AUD]', 'flac': '[AUD]',
+                'zip': '[ZIP]', 'rar': '[ZIP]', 'tar': '[ZIP]', 'gz': '[ZIP]',
+                'txt': '[TXT]', 'md': '[TXT]',
+                'py': '[PY]', 'js': '[JS]', 'html': '[HTML]', 'css': '[CSS]',
+                'json': '[JSON]', 'xml': '[XML]', 'yaml': '[YAML]', 'yml': '[YAML]'
             };
-            return icons[ext] || '📄';
+            return icons[ext] || '[FILE]';
         }
 
         function toggleSession(sessionIndex) {
@@ -1765,14 +1766,14 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
                 sessionDiv.innerHTML = `
                     <div class=\"session-header\" onclick=\"toggleSession(${index})\">
                         <div class=\"session-info\">
-                            <div class=\"session-date\">${formatDate(session.date)}</div>
+                            <div class=\"session-date\">${session.baseDirectory || 'Upload'} - ${formatDate(session.date)}</div>
                             <div class=\"session-meta\">
                                 ${session.fileCount} files · ${formatBytes(session.size)}
                             </div>
                         </div>
                         <div class=\"session-actions\" onclick=\"event.stopPropagation();\">
                             <button class=\"btn btn-secondary\" onclick=\"event.stopPropagation(); downloadSession('${session.name}')\">
-                                ⬇️ Download Session
+                                Download Session
                             </button>
                         </div>
                         <span class=\"expand-icon\" id=\"expand-icon-${index}\">▶</span>
@@ -1798,7 +1799,7 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
                                         <td class=\"file-date\">${formatDate(file.mtime)}</td>
                                         <td>
                                             <button class=\"download-btn\" onclick=\"downloadFile('${file.fullPath}')\">
-                                                ⬇️ Download
+                                                Download
                                             </button>
                                         </td>
                                     </tr>
@@ -2005,6 +2006,12 @@ async def upload_chunk(
         session.current_file = file_meta.relativePath
         session.files_metadata.append(file_meta)
         
+        # Capture base directory from first file's path
+        if session.base_directory is None and file_meta.relativePath:
+            parts = file_meta.relativePath.split('/')
+            if len(parts) > 0:
+                session.base_directory = parts[0]
+        
         # Calculate transfer speed and ETA
         elapsed_time = (datetime.now(timezone.utc) - session.start_time).total_seconds()
         transfer_speed = session.transferred_bytes / elapsed_time if elapsed_time > 0 else 0
@@ -2067,6 +2074,7 @@ async def complete_upload(
             "user_id": username,
             "created_at": session.created_at,
             "completed_at": time.time(),
+            "base_directory": session.base_directory,
             "total_files": session.total_files,
             "completed_files": session.completed_files,
             "total_bytes": session.total_bytes,
@@ -2138,12 +2146,14 @@ async def list_files(username: str = Depends(get_current_user)):
             manifest_path = session_dir / "manifest.json"
             session_name = session_dir.name
             session_time = session_dir.stat().st_mtime
+            base_directory = None
             
             if manifest_path.exists():
                 try:
                     async with aiofiles.open(manifest_path, 'r') as f:
                         manifest = json.loads(await f.read())
                         session_time = manifest.get("completed_at", session_time)
+                        base_directory = manifest.get("base_directory")
                 except:
                     pass
             
@@ -2168,6 +2178,7 @@ async def list_files(username: str = Depends(get_current_user)):
                 sessions.append({
                     "name": session_name,
                     "date": session_time,
+                    "baseDirectory": base_directory,
                     "files": files,
                     "fileCount": len(files),
                     "size": session_size
