@@ -1707,12 +1707,70 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
             icon.classList.toggle('expanded');
         }
 
-        function downloadFile(filePath) {
-            window.location.href = `/api/files/${encodeURIComponent(filePath)}`;
+        async function downloadFile(filePath) {
+            try {
+                const headers = {};
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                const response = await fetch(`/api/files/${encodeURIComponent(filePath)}`, { headers });
+                
+                if (response.status === 401) {
+                    document.getElementById('authSection').classList.add('active');
+                    document.getElementById('mainSection').style.display = 'none';
+                    return;
+                }
+                
+                if (!response.ok) {
+                    alert('Download failed: ' + response.statusText);
+                    return;
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filePath.split('/').pop();
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                alert('Download failed: ' + error.message);
+            }
         }
 
-        function downloadSession(sessionName) {
-            window.location.href = `/api/files/session/${encodeURIComponent(sessionName)}/archive`;
+        async function downloadSession(sessionName) {
+            try {
+                const headers = {};
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                const response = await fetch(`/api/files/session/${encodeURIComponent(sessionName)}/archive`, { headers });
+                
+                if (response.status === 401) {
+                    document.getElementById('authSection').classList.add('active');
+                    document.getElementById('mainSection').style.display = 'none';
+                    return;
+                }
+                
+                if (!response.ok) {
+                    alert('Download failed: ' + response.statusText);
+                    return;
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = sessionName + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                alert('Download failed: ' + error.message);
+            }
         }
 
         async function loadFiles() {
