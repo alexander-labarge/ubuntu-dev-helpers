@@ -2303,6 +2303,18 @@ async def download_session_archive(
     if not session_dir.exists() or not session_dir.is_dir():
         raise HTTPException(status_code=404, detail="Session not found")
 
+    # Try to get base_directory from manifest for a better filename
+    archive_name = session_dir.name  # Default to session UUID
+    manifest_path = session_dir / "manifest.json"
+    if manifest_path.exists():
+        try:
+            with open(manifest_path, 'r') as f:
+                manifest = json.load(f)
+                if manifest.get("base_directory"):
+                    archive_name = manifest["base_directory"]
+        except (json.JSONDecodeError, IOError):
+            pass  # Use default name on error
+
     tmp_path: Optional[Path] = None
     try:
         tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
@@ -2312,7 +2324,7 @@ async def download_session_archive(
         with zipfile.ZipFile(tmp_path, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
             for path in session_dir.rglob("*"):
                 if path.is_file() and path.name != "manifest.json":
-                    arcname = Path(session_dir.name) / path.relative_to(session_dir)
+                    arcname = Path(archive_name) / path.relative_to(session_dir)
                     zf.write(path, arcname=str(arcname))
 
         def cleanup(path_str: str):
@@ -2325,7 +2337,7 @@ async def download_session_archive(
 
         return FileResponse(
             path=str(tmp_path),
-            filename=f"{session_dir.name}.zip",
+            filename=f"{archive_name}.zip",
             media_type="application/zip",
             background=background_tasks
         )
