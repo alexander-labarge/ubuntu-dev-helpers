@@ -1740,7 +1740,7 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
             }
         }
 
-        async function downloadSession(sessionName, displayName) {
+        async function downloadSession(sessionName) {
             try {
                 const headers = {};
                 if (authToken) {
@@ -1759,11 +1759,11 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
                     return;
                 }
                 
-                // Try to get filename from Content-Disposition header, fallback to displayName
-                let filename = (displayName || sessionName) + '.zip';
+                // Get filename from Content-Disposition header (server uses base_directory)
+                let filename = sessionName + '.zip';
                 const contentDisposition = response.headers.get('Content-Disposition');
                 if (contentDisposition) {
-                    const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+                    const match = contentDisposition.match(/filename="?([^"]+)"?/);
                     if (match && match[1]) {
                         filename = match[1];
                     }
@@ -1863,7 +1863,7 @@ FILES_EXPLORER_TEMPLATE = """<!DOCTYPE html>
                             </div>
                         </div>
                         <div class=\"session-actions\" onclick=\"event.stopPropagation();\">
-                            <button class=\"btn btn-secondary\" onclick=\"event.stopPropagation(); downloadSession('${session.name}', '${session.baseDirectory || session.name}')\">
+                            <button class=\"btn btn-secondary\" onclick=\"event.stopPropagation(); downloadSession('${session.name}')\">
                                 Download Session
                             </button>
                         </div>
@@ -1947,7 +1947,14 @@ async def serve_frontend():
 @app.get("/files", response_class=HTMLResponse)
 async def serve_file_explorer():
     """Serve the file explorer interface"""
-    return FILES_EXPLORER_TEMPLATE
+    return HTMLResponse(
+        content=FILES_EXPLORER_TEMPLATE,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 
 @app.get("/fonts/{font_path:path}")
