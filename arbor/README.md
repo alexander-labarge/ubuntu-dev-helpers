@@ -1,6 +1,6 @@
 # ARBOR - Recursive Directory Upload Server
 
-A lightweight Python web server enabling browser-based recursive directory uploads to localhost. Features include full preservation of file permissions and timestamps, WebSocket-driven real-time progress tracking, chunked streaming for large files, compression during transfer, SHA-256 integrity verification, and bidirectional sync capabilities. Designed for local development workflows, backup utilities, and file migration tasks. Single-file deployment with embedded frontend - no external dependencies required.
+A lightweight Python web server enabling browser-based recursive directory uploads to localhost. Features include **parallel processing for accelerated transfers**, full preservation of file permissions and timestamps, WebSocket-driven real-time progress tracking, chunked streaming for large files, compression during transfer, SHA-256 integrity verification, and bidirectional sync capabilities. Designed for local development workflows, backup utilities, and file migration tasks. Modular architecture with integrated worker pool for high-performance file operations.
 
 **[Quick Start Guide](QUICKSTART.md)** | **[Full Documentation](#installation)** | **[Contributing](CONTRIBUTING.md)**
 
