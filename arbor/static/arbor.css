@@ -1,0 +1,901 @@
+/* =========================================================
+   ARBOR — Dark Theme
+   Global styling for:
+   - /           (upload UI)
+   - /files      (file explorer)
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   Fonts
+   --------------------------------------------------------- */
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono/JetBrainsMono-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono/JetBrainsMono-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrains-mono/JetBrainsMono-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+}
+
+/* ---------------------------------------------------------
+   Global reset / base
+   --------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Design tokens */
+:root {
+  /* Backgrounds */
+  --arbor-bg: #020617;             /* page background */
+  --arbor-bg-alt: #050816;
+  --arbor-surface: #0b1220;        /* cards / panels */
+  --arbor-surface-soft: #0f172a;
+  --arbor-surface-strong: #020617;
+
+  /* Text */
+  --arbor-text: #e5e7eb;
+  --arbor-text-soft: #9ca3af;
+  --arbor-text-muted: #6b7280;
+
+  /* Borders */
+  --arbor-border-subtle: #1e293b;
+  --arbor-border-strong: #334155;
+
+  /* Accents (tree / nature theme) */
+  --arbor-accent: #22c55e;
+  --arbor-accent-strong: #4ade80;
+  --arbor-accent-blue: #38bdf8;
+
+  /* Status */
+  --arbor-error: #f97373;
+  --arbor-warning: #eab308;
+  --arbor-success: #22c55e;
+
+  /* Layout */
+  --arbor-radius-sm: 0.375rem;
+  --arbor-radius-md: 0.5rem;
+  --arbor-radius-lg: 0.9rem;
+  --arbor-radius-xl: 1.4rem;
+  --arbor-radius-pill: 999px;
+
+  --arbor-shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.9);
+  --arbor-shadow-subtle: 0 12px 32px rgba(15, 23, 42, 0.85);
+
+  --arbor-font-sans: system-ui, -apple-system, BlinkMacSystemFont,
+    "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --arbor-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --arbor-max-width: 1120px;
+
+  --arbor-transition-fast: 150ms ease-out;
+  --arbor-transition-med: 220ms ease-out;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 0% -20%, rgba(56, 189, 248, 0.18), transparent 60%),
+    radial-gradient(circle at 100% 120%, rgba(34, 197, 94, 0.18), transparent 55%),
+    radial-gradient(circle at 50% 110%, rgba(15, 23, 42, 0.95), transparent 60%),
+    var(--arbor-bg);
+  color: var(--arbor-text);
+  font-family: var(--arbor-font-mono);
+  -webkit-font-smoothing: antialiased;
+  padding: 24px 16px 40px;
+}
+
+/* Shared container for both pages */
+.container {
+  max-width: var(--arbor-max-width);
+  margin: 0 auto;
+}
+
+/* ---------------------------------------------------------
+   Header (both pages)
+   --------------------------------------------------------- */
+
+header,
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 24px 24px 22px;
+  margin-bottom: 32px;
+  border-radius: var(--arbor-radius-xl);
+  border: 1px solid var(--arbor-border-subtle);
+  background: radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.18), transparent 55%),
+    radial-gradient(circle at 100% 120%, rgba(56, 189, 248, 0.18), transparent 58%),
+    linear-gradient(135deg, #020617, #020617, #020617);
+  box-shadow: var(--arbor-shadow-subtle);
+}
+
+header h1,
+.header h1 {
+  font-size: clamp(1.9rem, 2.4vw, 2.3rem);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--arbor-accent-strong);
+  line-height: 1.1;
+}
+
+.subtitle,
+.header-subtitle {
+  margin-top: 6px;
+  color: var(--arbor-text-soft);
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Nav / header actions on file explorer */
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+/* ---------------------------------------------------------
+   Buttons
+   --------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.2rem;
+  border-radius: var(--arbor-radius-pill);
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--arbor-accent), var(--arbor-accent-strong));
+  color: #022c22;
+  font-size: 0.84rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 12px 32px rgba(22, 163, 74, 0.55);
+  transition:
+    transform 80ms ease-out,
+    box-shadow var(--arbor-transition-med),
+    filter var(--arbor-transition-med),
+    background var(--arbor-transition-med),
+    border-color var(--arbor-transition-med),
+    color var(--arbor-transition-med);
+  white-space: nowrap;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 16px 40px rgba(22, 163, 74, 0.7);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  background: #111827;
+  border-color: var(--arbor-border-subtle);
+  color: var(--arbor-text-muted);
+  box-shadow: none;
+}
+
+/* Secondary / subtle buttons */
+.btn-secondary {
+  background: rgba(15, 23, 42, 0.95);
+  color: var(--arbor-text-soft);
+  border-color: var(--arbor-border-subtle);
+  box-shadow: none;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  border-color: var(--arbor-border-strong);
+  color: var(--arbor-text);
+}
+
+/* Danger */
+.btn-danger {
+  background: linear-gradient(135deg, #ef4444, #f97373);
+  border-color: rgba(239, 68, 68, 0.85);
+  color: #fef2f2;
+  box-shadow: 0 10px 30px rgba(127, 29, 29, 0.7);
+}
+
+.btn-danger:hover,
+.btn-danger:focus-visible {
+  filter: brightness(1.04);
+}
+
+/* Small download-style button in explorer */
+.download-btn {
+  padding: 0.32rem 0.75rem;
+  border-radius: var(--arbor-radius-pill);
+  border: 1px solid rgba(56, 189, 248, 0.75);
+  background: radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.25), transparent 55%),
+    rgba(15, 23, 42, 0.98);
+  color: #e0f2fe;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--arbor-transition-fast),
+    border-color var(--arbor-transition-fast),
+    transform 80ms ease-out;
+}
+
+.download-btn:hover,
+.download-btn:focus-visible {
+  border-color: var(--arbor-accent-blue);
+  background: rgba(15, 23, 42, 1);
+  transform: translateY(-1px);
+}
+
+/* ---------------------------------------------------------
+   Upload page: auth + upload panels
+   --------------------------------------------------------- */
+
+.auth-section,
+.upload-section,
+.file-browser {
+  border-radius: var(--arbor-radius-xl);
+  border: 1px solid var(--arbor-border-subtle);
+  background: radial-gradient(circle at 0% 0%, rgba(15, 23, 42, 0.9), transparent 55%),
+    radial-gradient(circle at 100% 140%, rgba(15, 23, 42, 0.9), transparent 60%),
+    rgba(15, 23, 42, 0.98);
+  box-shadow: var(--arbor-shadow-soft);
+  padding: 26px 24px 24px;
+  margin-bottom: 24px;
+}
+
+.auth-section {
+  display: none;
+}
+
+.auth-section.active {
+  display: block;
+}
+
+/* Auth fields on main page */
+.auth-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 14px;
+}
+
+.auth-section input[type="text"],
+.auth-section input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: var(--arbor-radius-md);
+  border: 1px solid var(--arbor-border-subtle);
+  background: rgba(15, 23, 42, 0.98);
+  color: var(--arbor-text);
+  font-family: var(--arbor-font-mono);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color var(--arbor-transition-fast),
+    box-shadow var(--arbor-transition-fast),
+    background-color var(--arbor-transition-fast);
+}
+
+.auth-section input:focus-visible {
+  border-color: rgba(34, 197, 94, 0.9);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.7);
+}
+
+/* Drop zone */
+.drop-zone {
+  border-radius: var(--arbor-radius-lg);
+  border: 1.75px dashed rgba(148, 163, 184, 0.7);
+  padding: 60px 24px;
+  background:
+    linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 1));
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color var(--arbor-transition-med),
+    background var(--arbor-transition-med),
+    box-shadow var(--arbor-transition-med),
+    transform 90ms ease-out;
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: var(--arbor-accent-strong);
+  background: radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.2), transparent 55%),
+    radial-gradient(circle at 100% 120%, rgba(56, 189, 248, 0.18), transparent 60%),
+    #020617;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.9);
+  transform: translateY(-1px);
+}
+
+.drop-zone-text {
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.drop-zone p {
+  color: var(--arbor-text-muted);
+  font-size: 0.86rem;
+}
+
+/* Hide native file input */
+input[type="file"] {
+  display: none;
+}
+
+/* Generic text inputs on upload page */
+input[type="text"],
+input[type="password"] {
+  border-radius: var(--arbor-radius-md);
+  border: 1px solid var(--arbor-border-subtle);
+  background: rgba(15, 23, 42, 0.98);
+  color: var(--arbor-text);
+  font-size: 0.9rem;
+}
+
+/* File preview & file tree */
+.file-preview {
+  margin-top: 22px;
+  padding: 18px 16px 16px;
+  border-radius: var(--arbor-radius-lg);
+  border: 1px solid var(--arbor-border-subtle);
+  background: rgba(15, 23, 42, 0.98);
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.file-preview h3 {
+  font-size: 0.98rem;
+  margin-bottom: 10px;
+}
+
+#fileStats {
+  font-size: 0.84rem;
+  color: var(--arbor-text-soft);
+  margin-bottom: 10px;
+}
+
+.file-tree {
+  font-family: var(--arbor-font-mono);
+  font-size: 0.8rem;
+}
+
+.file-tree-item {
+  padding: 3px 0;
+  color: var(--arbor-text-soft);
+}
+
+.file-tree-item.directory {
+  color: var(--arbor-accent-strong);
+  font-weight: 600;
+}
+
+.file-tree-item::before {
+  content: "├─ ";
+  color: var(--arbor-border-strong);
+  margin-right: 4px;
+}
+
+.file-tree-item.directory::before {
+  content: "▸ ";
+  color: var(--arbor-accent);
+}
+
+/* Controls row */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 14px;
+}
+
+/* ---------------------------------------------------------
+   Upload progress & completion
+   --------------------------------------------------------- */
+
+.progress-section {
+  display: none;
+  margin-top: 26px;
+}
+
+.progress-section.active {
+  display: block;
+}
+
+.progress-section h3 {
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 28px;
+  border-radius: var(--arbor-radius-pill);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--arbor-border-subtle);
+  overflow: hidden;
+  margin-bottom: 18px;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.9);
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  border-radius: var(--arbor-radius-pill);
+  background: linear-gradient(90deg, var(--arbor-accent), var(--arbor-accent-strong));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #022c22;
+  font-weight: 700;
+  font-size: 0.8rem;
+  transition: width 0.25s ease-out;
+}
+
+.progress-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.progress-item {
+  border-radius: var(--arbor-radius-md);
+  border: 1px solid var(--arbor-border-subtle);
+  background: rgba(15, 23, 42, 0.98);
+  padding: 12px 12px 10px;
+}
+
+.progress-item-label {
+  font-size: 0.78rem;
+  color: var(--arbor-text-muted);
+  margin-bottom: 4px;
+}
+
+.progress-item-value {
+  font-size: 0.96rem;
+  font-weight: 600;
+}
+
+/* Completion summary */
+.completion-summary {
+  display: none;
+  margin-top: 26px;
+  padding: 18px 16px;
+  border-radius: var(--arbor-radius-lg);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  background:
+    radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.18), transparent 55%),
+    rgba(15, 23, 42, 0.98);
+}
+
+.completion-summary.active {
+  display: block;
+}
+
+.completion-summary h3 {
+  color: var(--arbor-accent-strong);
+  margin-bottom: 10px;
+}
+
+.completion-summary p {
+  font-size: 0.85rem;
+  color: var(--arbor-text-soft);
+}
+
+.error-log {
+  max-height: 200px;
+  overflow-y: auto;
+  background: #020617;
+  border-radius: var(--arbor-radius-md);
+  padding: 10px 12px;
+  margin-top: 12px;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+}
+
+.error-item {
+  color: var(--arbor-error);
+  font-size: 0.78rem;
+  margin-bottom: 4px;
+}
+
+/* ---------------------------------------------------------
+   Quick access / file browser teaser (main page)
+   --------------------------------------------------------- */
+
+.file-browser h2 {
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+}
+
+.file-browser p {
+  font-size: 0.84rem;
+  color: var(--arbor-text-soft);
+  margin-bottom: 14px;
+}
+
+/* If you ever render .file-list on main page */
+.file-list {
+  list-style: none;
+  margin-top: 12px;
+}
+
+.file-list-item {
+  padding: 8px 10px;
+  background: rgba(15, 23, 42, 0.98);
+  border-radius: var(--arbor-radius-md);
+  border: 1px solid var(--arbor-border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+  margin-bottom: 4px;
+}
+
+.file-list-item:hover {
+  background: rgba(15, 23, 42, 1);
+}
+
+/* ---------------------------------------------------------
+   File explorer page: auth overlay
+   --------------------------------------------------------- */
+
+.auth-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 0 0, rgba(15, 23, 42, 0.96), transparent 80%),
+    rgba(2, 6, 23, 0.98);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 18px;
+}
+
+.auth-overlay.active {
+  display: flex;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 400px;
+  border-radius: var(--arbor-radius-xl);
+  border: 1px solid var(--arbor-border-subtle);
+  background: rgba(15, 23, 42, 0.98);
+  box-shadow: var(--arbor-shadow-soft);
+  padding: 26px 22px 22px;
+  text-align: center;
+}
+
+.auth-container h2 {
+  color: var(--arbor-accent-blue);
+  margin-bottom: 6px;
+}
+
+.auth-container p {
+  color: var(--arbor-text-soft);
+  font-size: 0.84rem;
+  margin-bottom: 14px;
+}
+
+.auth-container input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: var(--arbor-radius-md);
+  border: 1px solid var(--arbor-border-subtle);
+  background: #020617;
+  color: var(--arbor-text);
+  font-family: var(--arbor-font-mono);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.auth-container input:focus-visible {
+  border-color: rgba(59, 130, 246, 0.9);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.7);
+}
+
+/* ---------------------------------------------------------
+   File explorer: stats, toolbar
+   --------------------------------------------------------- */
+
+#mainSection.container {
+  margin-top: 4px;
+}
+
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.stat-card {
+  border-radius: var(--arbor-radius-lg);
+  border: 1px solid var(--arbor-border-subtle);
+  background: rgba(15, 23, 42, 0.98);
+  padding: 14px 14px 12px;
+}
+
+.stat-label {
+  color: var(--arbor-text-muted);
+  font-size: 0.78rem;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.3rem;
+  color: var(--arbor-accent-blue);
+  font-weight: 700;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: var(--arbor-radius-lg);
+  border: 1px solid var(--arbor-border-subtle);
+  background: rgba(15, 23, 42, 0.98);
+  margin-bottom: 18px;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+  padding: 9px 12px;
+  border-radius: var(--arbor-radius-md);
+  border: 1px solid var(--arbor-border-subtle);
+  background: #020617;
+  color: var(--arbor-text);
+  font-family: var(--arbor-font-mono);
+  font-size: 0.86rem;
+  outline: none;
+}
+
+.search-box::placeholder {
+  color: var(--arbor-text-muted);
+}
+
+.search-box:focus-visible {
+  border-color: rgba(56, 189, 248, 0.9);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.75);
+}
+
+/* ---------------------------------------------------------
+   File explorer: sessions & file tables
+   --------------------------------------------------------- */
+
+.session-container {
+  margin-bottom: 18px;
+}
+
+.session-header {
+  border-radius: var(--arbor-radius-lg) var(--arbor-radius-lg) 0 0;
+  border: 1px solid var(--arbor-border-subtle);
+  background: linear-gradient(135deg, #020617, #020617, #020617);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: background var(--arbor-transition-fast),
+    border-color var(--arbor-transition-fast);
+}
+
+.session-header:hover {
+  background: radial-gradient(circle at 0 0, rgba(34, 197, 94, 0.18), transparent 55%),
+    #020617;
+  border-color: var(--arbor-border-strong);
+}
+
+.session-info {
+  flex: 1;
+}
+
+.session-date {
+  font-size: 0.96rem;
+  color: var(--arbor-accent);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.session-meta {
+  font-size: 0.8rem;
+  color: var(--arbor-text-soft);
+}
+
+.session-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.expand-icon {
+  font-size: 0.75rem;
+  color: var(--arbor-text-muted);
+  transition: transform var(--arbor-transition-med);
+}
+
+.expand-icon.expanded {
+  transform: rotate(90deg);
+}
+
+/* Files for a session */
+.file-grid {
+  display: none;
+  border-radius: 0 0 var(--arbor-radius-lg) var(--arbor-radius-lg);
+  border: 1px solid var(--arbor-border-subtle);
+  border-top: none;
+  background: rgba(15, 23, 42, 0.98);
+  padding: 14px 14px 10px;
+}
+
+.file-grid.expanded {
+  display: block;
+}
+
+.file-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.file-table th {
+  text-align: left;
+  padding: 8px 6px;
+  background: #020617;
+  color: var(--arbor-text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--arbor-border-subtle);
+}
+
+.file-table td {
+  padding: 7px 6px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.9);
+}
+
+.file-table tr:hover {
+  background: rgba(15, 23, 42, 1);
+}
+
+.file-icon {
+  display: inline-block;
+  min-width: 50px;
+  margin-right: 6px;
+  color: var(--arbor-accent-blue);
+  font-size: 0.78rem;
+}
+
+.file-name {
+  color: var(--arbor-text);
+  font-weight: 500;
+}
+
+.file-size,
+.file-date {
+  color: var(--arbor-text-soft);
+  font-size: 0.78rem;
+}
+
+/* Empty + loading states */
+.loading {
+  text-align: center;
+  padding: 36px 16px;
+  color: var(--arbor-text-soft);
+  font-size: 0.86rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 18px;
+  color: var(--arbor-text-soft);
+}
+
+.empty-state-icon {
+  font-size: 3.6rem;
+  opacity: 0.25;
+  margin-bottom: 12px;
+}
+
+/* ---------------------------------------------------------
+   Spinner (used on both pages)
+   --------------------------------------------------------- */
+
+.spinner {
+  border: 3px solid #020617;
+  border-top: 3px solid var(--arbor-accent);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------------------
+   Accessibility / focus / reduced motion
+   --------------------------------------------------------- */
+
+:focus-visible {
+  outline: 2px solid var(--arbor-accent-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------------------------------------------------------
+   Responsive tweaks
+   --------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  header,
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  body {
+    padding-inline: 12px;
+  }
+
+  .upload-section,
+  .file-browser,
+  .auth-section {
+    padding-inline: 18px;
+  }
+}

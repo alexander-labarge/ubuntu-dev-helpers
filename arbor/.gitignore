@@ -43,6 +43,7 @@ Thumbs.db
 uploads/
 logs/
 *.log
+tmp/
 
 # Configuration (sensitive)
 config.local.yaml
