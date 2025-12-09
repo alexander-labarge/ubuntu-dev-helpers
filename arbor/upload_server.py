@@ -36,6 +36,9 @@ from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 import uvicorn
 
+# Import worker pool for parallel processing
+from worker_pool import WorkerPool, WorkerConfig, FileDownloadWorker, WorkerType
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -180,6 +183,10 @@ users_db: Dict[str, User] = {}
 # HTTP Bearer for authentication
 security_scheme = HTTPBearer(auto_error=False)
 
+# Worker pool for parallel file operations - initialized in main()
+worker_pool: Optional[WorkerPool] = None
+download_worker: Optional[FileDownloadWorker] = None
+
 
 # ============================================================================
 # Authentication Functions
@@ -311,10 +318,30 @@ async def send_progress_update(session_id: str, message_type: str, payload: Dict
 # FastAPI Application
 # ============================================================================
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan - startup and shutdown"""
+    # Startup
+    global worker_pool
+    if worker_pool is not None:
+        await worker_pool.start()
+        logger.info("Worker pool started")
+    
+    yield
+    
+    # Shutdown
+    if worker_pool is not None:
+        await worker_pool.shutdown(wait=True)
+        logger.info("Worker pool shutdown complete")
+
+
 app = FastAPI(
     title="ARBOR - Recursive Directory Upload Server",
     description="Browser-based interface for recursive directory uploads with metadata preservation",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 
@@ -2021,6 +2048,20 @@ async def logout(username: str = Depends(get_current_user)):
     return {"message": "Logged out successfully"}
 
 
+@app.get("/api/worker/metrics")
+async def get_worker_metrics(username: str = Depends(get_current_user)):
+    """Get worker pool performance metrics"""
+    if worker_pool is None:
+        return {
+            "enabled": False,
+            "message": "Worker pool not initialized"
+        }
+    
+    metrics = worker_pool.get_metrics()
+    metrics["enabled"] = True
+    return metrics
+
+
 @app.post("/api/upload/init")
 async def initialize_upload(
     request: Request,
@@ -2367,20 +2408,53 @@ async def download_session_archive(
 @app.get("/api/files/{file_path:path}")
 async def download_file(
     file_path: str,
-    username: str = Depends(get_current_user)
+    username: str = Depends(get_current_user),
+    parallel: bool = False
 ):
-    """Download a specific file"""
+    """
+    Download a specific file.
+    
+    Args:
+        file_path: Path to file relative to user directory
+        username: Authenticated username
+        parallel: Enable parallel streaming for faster downloads (for large files)
+    """
     safe_path = sanitize_path(file_path)
     full_path = Path(config.server.upload_dir) / username / safe_path
     
     if not full_path.exists() or not full_path.is_file():
         raise HTTPException(status_code=404, detail="File not found")
     
-    return FileResponse(
-        path=str(full_path),
-        filename=full_path.name,
-        media_type='application/octet-stream'
-    )
+    # Use parallel streaming for large files if enabled and worker pool is available
+    file_size = full_path.stat().st_size
+    use_parallel = parallel and download_worker is not None and file_size > 10 * 1024 * 1024  # 10MB threshold
+    
+    if use_parallel:
+        logger.info(f"Using parallel streaming for {full_path.name} ({file_size} bytes)")
+        
+        async def parallel_stream_generator():
+            async for chunk in download_worker.stream_file_parallel(
+                full_path,
+                chunk_size=config.server.chunk_size,
+                num_parallel_reads=4
+            ):
+                yield chunk
+        
+        return StreamingResponse(
+            parallel_stream_generator(),
+            media_type='application/octet-stream',
+            headers={
+                'Content-Disposition': f'attachment; filename="{full_path.name}"',
+                'Content-Length': str(file_size)
+            }
+        )
+    else:
+        # Use standard file response for smaller files or when parallel is disabled
+        return FileResponse(
+            path=str(full_path),
+            filename=full_path.name,
+            media_type='application/octet-stream'
+        )
 
 
 @app.post("/api/gitlab/push")
@@ -2642,6 +2716,23 @@ def main():
     # Create upload directory
     Path(config.server.upload_dir).mkdir(parents=True, exist_ok=True)
     
+    # Initialize worker pool for parallel operations
+    global worker_pool, download_worker
+    try:
+        worker_config = WorkerConfig(
+            max_workers=config.server.workers,
+            worker_type=WorkerType.THREAD,
+            task_timeout=300.0,
+            retry_attempts=3
+        )
+        worker_pool = WorkerPool(worker_config)
+        download_worker = FileDownloadWorker(worker_pool)
+        logger.info(f"Worker pool initialized with {config.server.workers} workers")
+    except Exception as e:
+        logger.warning(f"Failed to initialize worker pool: {e}. Parallel operations will be disabled.")
+        worker_pool = None
+        download_worker = None
+    
     # Log configuration
     logger.info("=" * 60)
     logger.info("ARBOR - Recursive Directory Upload Server")
@@ -2650,6 +2741,8 @@ def main():
     logger.info(f"Port: {config.server.port}")
     logger.info(f"Upload Directory: {config.server.upload_dir}")
     logger.info(f"Max File Size: {config.server.max_file_size} bytes")
+    logger.info(f"Workers: {config.server.workers}")
+    logger.info(f"Parallel Processing: {'Enabled' if worker_pool else 'Disabled'}")
     logger.info(f"Authentication: {'Enabled' if config.security.auth_enabled else 'Disabled'}")
     logger.info("=" * 60)
     logger.info(f"Server running at http://{config.server.host}:{config.server.port}")
