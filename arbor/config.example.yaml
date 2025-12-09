@@ -23,8 +23,20 @@ server:
   # Chunk size for file transfers (in bytes)
   chunk_size: 1048576
   
-  # Number of concurrent worker threads
+  # Number of concurrent worker threads for parallel processing
+  # Recommended settings:
+  #   - Low-end systems: 4-8 workers
+  #   - Mid-range systems: 16 workers (default)
+  #   - High-performance systems: 32-64 workers
+  #   - Server deployments: 64+ workers
+  # Higher values improve throughput for large files and bulk operations
   workers: 16
+  
+  # Parallel download threshold (in bytes)
+  # Files larger than this will use parallel streaming for faster downloads
+  # when parallel=true query parameter is provided
+  # Default: 10MB (10485760 bytes)
+  parallel_download_threshold: 10485760
 
 compression:
   # Enable/disable compression support
