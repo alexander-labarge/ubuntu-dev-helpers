@@ -70,9 +70,10 @@ class TaskMetrics:
     @property
     def throughput(self) -> float:
         """Calculate throughput in bytes per second"""
-        if self.elapsed_time == 0:
+        elapsed = self.elapsed_time
+        if elapsed <= 0:
             return 0.0
-        return self.total_bytes_processed / self.elapsed_time
+        return self.total_bytes_processed / elapsed
 
 
 class WorkerPool:
@@ -93,7 +94,7 @@ class WorkerPool:
         """
         self.config = config or WorkerConfig()
         self._executor: Optional[Any] = None
-        self._task_queue: asyncio.Queue = asyncio.Queue(maxsize=self.config.queue_size)
+        self._task_queue: Optional[asyncio.Queue] = None
         self._active_tasks: Dict[str, asyncio.Task] = {}
         self._shutdown = False
         self.metrics = TaskMetrics()
@@ -108,6 +109,10 @@ class WorkerPool:
         if self._executor is not None:
             logger.warning("WorkerPool already started")
             return
+        
+        # Create task queue (must be done in async context)
+        if self._task_queue is None:
+            self._task_queue = asyncio.Queue(maxsize=self.config.queue_size)
         
         if self.config.worker_type == WorkerType.THREAD:
             self._executor = ThreadPoolExecutor(max_workers=self.config.max_workers)

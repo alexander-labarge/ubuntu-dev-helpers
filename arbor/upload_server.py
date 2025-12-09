@@ -60,6 +60,7 @@ class ServerConfig(BaseModel):
     max_session_size: int = 100 * 1024 * 1024 * 1024  # 100GB
     chunk_size: int = 1024 * 1024  # 1MB
     workers: int = 16
+    parallel_download_threshold: int = 10 * 1024 * 1024  # 10MB - files larger than this use parallel streaming
 
 
 class CompressionConfig(BaseModel):
@@ -2427,7 +2428,11 @@ async def download_file(
     
     # Use parallel streaming for large files if enabled and worker pool is available
     file_size = full_path.stat().st_size
-    use_parallel = parallel and download_worker is not None and file_size > 10 * 1024 * 1024  # 10MB threshold
+    use_parallel = (
+        parallel and 
+        download_worker is not None and 
+        file_size > config.server.parallel_download_threshold
+    )
     
     if use_parallel:
         logger.info(f"Using parallel streaming for {full_path.name} ({file_size} bytes)")
